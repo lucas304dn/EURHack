@@ -135,7 +135,11 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
     },
     onSuccess: (result) => {
       setAnalysis(result as TribeActivationResult);
-      toast.success("TRIBE analysis complete");
+      if ((result as TribeActivationResult).persistence_error) {
+        toast.warning("TRIBE analysis complete, but saving the run failed.");
+      } else {
+        toast.success("TRIBE analysis complete");
+      }
     },
     onError: (e: Error) => {
       setAnalysis(null);

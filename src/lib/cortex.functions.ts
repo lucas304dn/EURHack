@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Database, Json } from "@/integrations/supabase/types";
+
+type MediaItemRow = Database["public"]["Tables"]["media_items"]["Row"];
+type TribeAnalysisRunRow = Database["public"]["Tables"]["tribe_analysis_runs"]["Row"];
 
 const GenInput = z.object({
   prompt: z.string().min(1).max(2000),
@@ -358,6 +362,106 @@ export const listMedia = createServerFn({ method: "GET" }).handler(async () => {
   return { items: data ?? [] };
 });
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function asJsonRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function asNumberArray(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+}
+
+function asNumberRecord(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, raw]) => [key, Number(raw)] as const)
+      .filter(([, numeric]) => Number.isFinite(numeric)),
+  );
+}
+
+function asRegionMaskRecord(value: unknown): Record<string, [number, number]> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, raw]) => {
+      if (!Array.isArray(raw) || raw.length < 2) return [];
+      const start = Number(raw[0]);
+      const end = Number(raw[1]);
+      return Number.isFinite(start) && Number.isFinite(end) ? [[key, [start, end] as [number, number]]] : [];
+    }),
+  );
+}
+
+function serializeAnalysisRun(row: TribeAnalysisRunRow) {
+  return {
+    id: row.id,
+    media_item_id: row.media_item_id,
+    created_at: row.created_at,
+    input_type: row.input_type as "text" | "audio" | "video",
+    title: row.title,
+    analysis_id: row.analysis_id,
+    shape: asNumberArray(row.shape),
+    segments: Array.isArray(row.segments) ? (row.segments as Array<Record<string, unknown>>) : [],
+    metadata: asJsonRecord(row.metadata),
+    summary: asJsonRecord(row.summary),
+    scores: asNumberRecord(row.scores),
+    region_masks: asRegionMaskRecord(row.region_masks),
+    peak_activation_step: row.peak_activation_step,
+    viewer_url: row.viewer_url,
+    viewer_absolute_url: row.viewer_absolute_url,
+    viewer_available: row.viewer_available,
+    viewer_error: row.viewer_error,
+  };
+}
+
+export const listMediaWithLatestAnalysis = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: media, error: mediaError } = await supabaseAdmin
+    .from("media_items")
+    .select("*")
+    .eq("user_id", "demo-user")
+    .order("created_at", { ascending: false });
+  if (mediaError) throw new Error(mediaError.message);
+
+  const items = (media ?? []) as MediaItemRow[];
+  const ids = items.map((item) => item.id);
+  if (ids.length === 0) return { items: [] };
+
+  const { data: analyses, error: analysisError } = await supabaseAdmin
+    .from("tribe_analysis_runs")
+    .select("*")
+    .eq("user_id", "demo-user")
+    .in("media_item_id", ids)
+    .order("created_at", { ascending: false });
+  if (analysisError) {
+    console.error("Failed to load TRIBE analysis runs", analysisError);
+    return {
+      items: items.map((item) => ({
+        ...item,
+        latest_analysis: null,
+      })),
+      analysis_error: analysisError.message,
+    };
+  }
+
+  const latestByMedia = new Map<string, ReturnType<typeof serializeAnalysisRun>>();
+  ((analyses ?? []) as TribeAnalysisRunRow[]).forEach((row) => {
+    if (!latestByMedia.has(row.media_item_id)) {
+      latestByMedia.set(row.media_item_id, serializeAnalysisRun(row));
+    }
+  });
+
+  return {
+    items: items.map((item) => ({
+      ...item,
+      latest_analysis: latestByMedia.get(item.id) ?? null,
+    })),
+  };
+});
+
 export const deleteMedia = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
@@ -397,6 +501,8 @@ export type TribeActivationResult = {
   viewer_absolute_url?: string;
   viewer_available?: boolean;
   viewer_error?: string;
+  analysis_db_id?: string;
+  persistence_error?: string;
 };
 
 function getTribeApiBase() {
@@ -462,6 +568,62 @@ async function readTribeResponse(res: Response, tribeBase: string) {
   return withAbsoluteViewerUrl(result, tribeBase);
 }
 
+function toJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value ?? null)) as Json;
+}
+
+function compactTribeResult(result: TribeActivationResult) {
+  const { activation, allPreds, ...compact } = result;
+  return {
+    ...compact,
+    raw_arrays_omitted: true,
+    activation_frames: activation?.length ?? 0,
+    activation_vertices: activation?.[0]?.length ?? 0,
+    allPreds_frames: allPreds?.length ?? 0,
+    allPreds_vertices: allPreds?.[0]?.length ?? 0,
+  };
+}
+
+async function persistTribeAnalysisRun(
+  item: AnalyzeMediaInput,
+  result: TribeActivationResult,
+): Promise<TribeActivationResult> {
+  try {
+    const scores = result.scores ?? result.summary.scores ?? {};
+    const regionMasks = result.region_masks ?? result.summary.region_masks ?? {};
+    const { data: row, error } = await supabaseAdmin
+      .from("tribe_analysis_runs")
+      .insert({
+        media_item_id: item.id,
+        user_id: "demo-user",
+        input_type: result.input_type,
+        title: item.title ?? null,
+        analysis_id: result.analysis_id ?? null,
+        shape: toJson(result.shape ?? []),
+        segments: toJson(result.segments ?? []),
+        metadata: toJson(result.metadata ?? {}),
+        summary: toJson(result.summary ?? {}),
+        scores: toJson(scores),
+        region_masks: toJson(regionMasks),
+        peak_activation_step: result.peak_activation_step,
+        viewer_url: result.viewer_url ?? null,
+        viewer_absolute_url: result.viewer_absolute_url ?? null,
+        viewer_available: result.viewer_available ?? false,
+        viewer_error: result.viewer_error ?? null,
+        result_payload: toJson(compactTribeResult(result)),
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return { ...result, analysis_db_id: row.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to persist TRIBE analysis run", error);
+    return { ...result, persistence_error: message };
+  }
+}
+
 export const analyzeMedia = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AnalyzeMediaInput.parse(input))
   .handler(async ({ data }) => {
@@ -477,7 +639,8 @@ export const analyzeMedia = createServerFn({ method: "POST" })
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, campaign_name: campaignName }),
       });
-      return readTribeResponse(res, tribeBase);
+      const result = await readTribeResponse(res, tribeBase);
+      return persistTribeAnalysisRun(data, result);
     }
 
     if (!data.content_url) {
@@ -497,7 +660,8 @@ export const analyzeMedia = createServerFn({ method: "POST" })
       method: "POST",
       body: form,
     });
-    return readTribeResponse(res, tribeBase);
+    const result = await readTribeResponse(res, tribeBase);
+    return persistTribeAnalysisRun(data, result);
   });
 
 // ---------- Upload (Neural Feedback) ----------

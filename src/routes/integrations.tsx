@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Shell } from "@/components/cortex/Shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { listMedia } from "@/lib/cortex.functions";
+import { listMediaWithLatestAnalysis } from "@/lib/cortex.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/integrations")({
@@ -19,10 +19,13 @@ export const Route = createFileRoute("/integrations")({
 });
 
 function Page() {
-  const fnList = useServerFn(listMedia);
+  const fnList = useServerFn(listMediaWithLatestAnalysis);
 
   const loadCampaignData = async () => {
-    const result = await fnList();
+    const result = (await fnList()) as { items?: MediaItem[]; analysis_error?: string };
+    if (result.analysis_error) {
+      toast.warning("Saved TRIBE analysis is unavailable; exporting media only.");
+    }
     const campaignData = buildCampaignExportRows((result.items ?? []) as MediaItem[]);
 
     if (campaignData.length === 0) {
@@ -65,7 +68,7 @@ function Page() {
   const integrations: IntegrationItem[] = [
     {
       name: "Export to CSV",
-      description: "Download all your ads and cognitive insights as a spreadsheet",
+      description: "Download all your ads and saved TRIBE scores as a spreadsheet",
       logo: <Table2 className="h-5 w-5 text-[#16a34a]" />,
       action: (
         <Button
@@ -79,7 +82,7 @@ function Page() {
     },
     {
       name: "Export to PDF",
-      description: "Generate a branded Neuro Report with scores and insights",
+      description: "Generate a branded Neuro Report with saved TRIBE analysis",
       logo: <FileText className="h-5 w-5 text-[#dc2626]" />,
       action: (
         <Button
@@ -164,6 +167,27 @@ type MediaItem = {
   content_url: string | null;
   content_text: string | null;
   created_at: string;
+  latest_analysis?: LatestAnalysis | null;
+};
+
+type LatestAnalysis = {
+  id: string;
+  media_item_id: string;
+  created_at: string;
+  input_type: "text" | "audio" | "video";
+  title: string | null;
+  analysis_id: string | null;
+  shape: number[];
+  segments: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
+  summary: Record<string, unknown>;
+  scores: Record<string, number>;
+  region_masks: Record<string, [number, number]>;
+  peak_activation_step: number;
+  viewer_url: string | null;
+  viewer_absolute_url: string | null;
+  viewer_available: boolean;
+  viewer_error: string | null;
 };
 
 type IntegrationItem = {
@@ -174,6 +198,7 @@ type IntegrationItem = {
 };
 
 type Score = {
+  key: string;
   label: string;
   value: number;
 };
@@ -184,27 +209,26 @@ type CampaignExportRow = {
   mediaType: string;
   createdAt: string;
   contentUrl: string;
+  analysisStatus: string;
+  analysisRunAt: string;
+  tribeAnalysisId: string;
+  inputType: string;
+  shape: string;
+  segments: string;
+  viewerUrl: string;
   scores: Score[];
   peakActivationStep: string;
   aiInsights: string;
 };
 
-const NEURO_SCORES: Score[] = [
-  { label: "Visual Cortex", value: 78 },
-  { label: "Language Network", value: 86 },
-  { label: "Attention", value: 74 },
-  { label: "Emotional Response", value: 81 },
-  { label: "Memory Encoding", value: 69 },
-  { label: "Overall Impact", value: 82 },
-];
-
-const PEAK_ACTIVATION_STEP = "Message comprehension";
-
-const AI_INSIGHTS = [
-  "High parietal activation suggests this campaign is likely to capture and hold viewer attention effectively.",
-  "Language network response indicates strong message clarity and persuasive structure.",
-  "Reward and memory signals suggest strong emotional resonance with follow-up recall potential.",
-];
+const SCORE_LABELS: Record<string, string> = {
+  visual_cortex: "Visual Cortex",
+  language_network: "Language Network",
+  attention: "Attention",
+  emotional_response: "Emotional Response",
+  memory_encoding: "Memory Encoding",
+  overall_impact: "Overall Impact",
+};
 
 function IntegrationRow({ integration }: { integration: IntegrationItem }) {
   return (
@@ -221,30 +245,102 @@ function IntegrationRow({ integration }: { integration: IntegrationItem }) {
   );
 }
 
+function labelForScore(key: string) {
+  return SCORE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function sortScores([a]: [string, number], [b]: [string, number]) {
+  if (a === "overall_impact") return 1;
+  if (b === "overall_impact") return -1;
+  return a.localeCompare(b);
+}
+
+function scoresFromAnalysis(analysis?: LatestAnalysis | null): Score[] {
+  return Object.entries(analysis?.scores ?? {})
+    .sort(sortScores)
+    .map(([key, raw]) => ({
+      key,
+      label: labelForScore(key),
+      value: Math.max(0, Math.min(100, Number(raw) || 0)),
+    }));
+}
+
+function shapeLabel(analysis?: LatestAnalysis | null) {
+  if (!analysis) return "";
+  return `${analysis.shape?.[0] ?? 0} frames x ${analysis.shape?.[1] ?? 0} vertices`;
+}
+
+function buildAnalysisInsights(analysis: LatestAnalysis | null | undefined, scores: Score[]) {
+  if (!analysis) {
+    return "No saved TRIBE analysis has been run for this asset yet.";
+  }
+
+  const overall = scores.find((score) => score.key === "overall_impact");
+  const topScores = scores
+    .filter((score) => score.key !== "overall_impact")
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 2);
+  const insights: string[] = [];
+
+  if (topScores[0]) {
+    insights.push(`${topScores[0].label} is the strongest saved TRIBE signal at ${topScores[0].value.toFixed(1)}/100.`);
+  }
+  if (topScores[1]) {
+    insights.push(`${topScores[1].label} follows at ${topScores[1].value.toFixed(1)}/100.`);
+  }
+  if (overall) {
+    insights.push(`Overall impact is ${overall.value.toFixed(1)}/100.`);
+  }
+  insights.push(`Peak activation occurred at TRIBE step ${analysis.peak_activation_step}.`);
+  if (analysis.viewer_available && (analysis.viewer_absolute_url || analysis.viewer_url)) {
+    insights.push("Interactive cortical viewer was available when the analysis was saved.");
+  }
+
+  return insights.join(" ");
+}
+
 function buildCampaignExportRows(items: MediaItem[]): CampaignExportRow[] {
-  return items.map((item) => ({
-    campaignName: item.title?.trim() || "Cortex Campaign",
-    adCopyVariant: item.content_text?.trim() || item.content_url || "Media creative",
-    mediaType: item.type,
-    createdAt: item.created_at,
-    contentUrl: item.content_url ?? "",
-    scores: NEURO_SCORES,
-    peakActivationStep: PEAK_ACTIVATION_STEP,
-    aiInsights: AI_INSIGHTS.join(" "),
-  }));
+  return items.map((item) => {
+    const analysis = item.latest_analysis ?? null;
+    const scores = scoresFromAnalysis(analysis);
+    return {
+      campaignName: item.title?.trim() || "Cortex Campaign",
+      adCopyVariant: item.content_text?.trim() || item.content_url || "Media creative",
+      mediaType: item.type,
+      createdAt: item.created_at,
+      contentUrl: item.content_url ?? "",
+      analysisStatus: analysis ? "Analyzed" : "Not analyzed",
+      analysisRunAt: analysis?.created_at ?? "",
+      tribeAnalysisId: analysis?.analysis_id ?? analysis?.id ?? "",
+      inputType: analysis?.input_type ?? "",
+      shape: shapeLabel(analysis),
+      segments: analysis ? String(analysis.segments?.length ?? 0) : "",
+      viewerUrl: analysis?.viewer_absolute_url ?? analysis?.viewer_url ?? "",
+      scores,
+      peakActivationStep: analysis ? String(analysis.peak_activation_step) : "",
+      aiInsights: buildAnalysisInsights(analysis, scores),
+    };
+  });
 }
 
 function exportCsv(rows: CampaignExportRow[]) {
-  const scoreHeaders = NEURO_SCORES.map((score) => score.label);
+  const scoreHeaders = scoreHeadersForRows(rows);
   const headers = [
     "Campaign Name",
     "Ad Copy Variant",
     "Media Type",
     "Created At",
     "Content URL",
-    ...scoreHeaders,
+    "Analysis Status",
+    "Analysis Run At",
+    "TRIBE Analysis ID",
+    "TRIBE Input Type",
+    "TRIBE Shape",
+    "TRIBE Segments",
     "Peak Activation Step",
-    "AI Insights",
+    "Viewer URL",
+    ...scoreHeaders.map((score) => score.label),
+    "Analysis Insights",
   ];
 
   const body = rows.map((row) =>
@@ -254,8 +350,15 @@ function exportCsv(rows: CampaignExportRow[]) {
       row.mediaType,
       row.createdAt,
       row.contentUrl,
-      ...row.scores.map((score) => String(score.value)),
+      row.analysisStatus,
+      row.analysisRunAt,
+      row.tribeAnalysisId,
+      row.inputType,
+      row.shape,
+      row.segments,
       row.peakActivationStep,
+      row.viewerUrl,
+      ...scoreHeaders.map((score) => scoreValueForHeader(row, score.key)),
       row.aiInsights,
     ]
       .map(csvCell)
@@ -270,6 +373,21 @@ function exportCsv(rows: CampaignExportRow[]) {
   );
 }
 
+function scoreHeadersForRows(rows: CampaignExportRow[]) {
+  const headers = new Map<string, string>();
+  rows.forEach((row) => {
+    row.scores.forEach((score) => {
+      if (!headers.has(score.key)) headers.set(score.key, score.label);
+    });
+  });
+  return Array.from(headers, ([key, label]) => ({ key, label }));
+}
+
+function scoreValueForHeader(row: CampaignExportRow, key: string) {
+  const score = row.scores.find((item) => item.key === key);
+  return score ? score.value.toFixed(1) : "";
+}
+
 function exportPdf(rows: CampaignExportRow[]) {
   const pdf = createPdfReport(rows);
   triggerDownload(new Blob([pdf], { type: "application/pdf" }), "cortex-neuro-report.pdf");
@@ -277,6 +395,8 @@ function exportPdf(rows: CampaignExportRow[]) {
 
 function createPdfReport(rows: CampaignExportRow[]) {
   const first = rows[0];
+  const primary = rows.find((row) => row.scores.length > 0) ?? first;
+  const analyzedCount = rows.filter((row) => row.analysisStatus === "Analyzed").length;
   const pageWidth = 595.28;
   const pageHeight = 841.89;
   const margin = 42;
@@ -345,37 +465,42 @@ function createPdfReport(rows: CampaignExportRow[]) {
 
   sectionBox(76);
   heading("Campaign Summary");
-  text(`Campaign: ${first.campaignName}`, margin, y, 10, color(75, 85, 99));
+  text(`Campaign: ${primary.campaignName}`, margin, y, 10, color(75, 85, 99));
   y += 15;
   text(`Date: ${new Date().toLocaleDateString()}`, margin, y, 10, color(75, 85, 99));
   y += 15;
-  text(`Assets analyzed: ${rows.length}`, margin, y, 10, color(75, 85, 99));
+  text(`Assets exported: ${rows.length} / TRIBE analyses saved: ${analyzedCount}`, margin, y, 10, color(75, 85, 99));
   y += 25;
 
-  sectionBox(148);
-  heading("Cognitive Scores");
-  first.scores.forEach((score) => {
-    text(score.label, margin, y, 10, color(55, 65, 81));
-    text(`${score.value}/100`, pageWidth - margin - 44, y, 10, color(55, 65, 81), "F2");
-    y += 7;
-    rect(margin, y, contentWidth, 5, color(229, 231, 235));
-    rect(margin, y, contentWidth * (score.value / 100), 5, color(1, 105, 111));
-    y += 16;
-  });
+  sectionBox(primary.scores.length > 0 ? 42 + primary.scores.length * 23 : 72);
+  heading("Latest TRIBE Scores");
+  if (primary.scores.length > 0) {
+    primary.scores.forEach((score) => {
+      text(score.label, margin, y, 10, color(55, 65, 81));
+      text(`${score.value.toFixed(1)}/100`, pageWidth - margin - 52, y, 10, color(55, 65, 81), "F2");
+      y += 7;
+      rect(margin, y, contentWidth, 5, color(229, 231, 235));
+      rect(margin, y, contentWidth * (score.value / 100), 5, color(1, 105, 111));
+      y += 16;
+    });
+  } else {
+    paragraph("No saved TRIBE analysis is available yet. Run Neural Feedback first to populate real scores.");
+  }
   y += 10;
 
   sectionBox(62);
   heading("Peak Activation");
-  paragraph(first.peakActivationStep);
+  paragraph(primary.peakActivationStep || "No saved peak activation step.");
 
   sectionBox(92);
-  heading("AI Insights");
-  paragraph(first.aiInsights, 92);
+  heading("Analysis Insights");
+  paragraph(primary.aiInsights, 92);
 
   heading("Campaign Assets");
   rows.forEach((row, index) => {
-    const copyLines = wrapPdfText(row.adCopyVariant, 105).slice(0, 5);
-    ensureSpace(34 + copyLines.length * 13);
+    const copyLines = wrapPdfText(row.adCopyVariant, 105).slice(0, 4);
+    const analysisLine = `${row.analysisStatus}${row.analysisRunAt ? ` / ${new Date(row.analysisRunAt).toLocaleDateString()}` : ""}${row.peakActivationStep ? ` / Peak step ${row.peakActivationStep}` : ""}`;
+    ensureSpace(48 + copyLines.length * 13);
     text(
       `${index + 1}. ${row.campaignName} (${row.mediaType})`,
       margin,
@@ -385,6 +510,8 @@ function createPdfReport(rows: CampaignExportRow[]) {
       "F2",
     );
     y += 15;
+    text(analysisLine, margin + 10, y, 9, color(1, 105, 111), "F2");
+    y += 13;
     copyLines.forEach((line) => {
       text(line, margin + 10, y, 9, color(75, 85, 99));
       y += 13;

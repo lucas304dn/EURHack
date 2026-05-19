@@ -44,6 +44,80 @@ export type Database = {
         }
         Relationships: []
       }
+      tribe_analysis_runs: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          id: string
+          input_type: string
+          media_item_id: string
+          metadata: Json
+          peak_activation_step: number
+          region_masks: Json
+          result_payload: Json
+          scores: Json
+          segments: Json
+          shape: Json
+          summary: Json
+          title: string | null
+          user_id: string
+          viewer_absolute_url: string | null
+          viewer_available: boolean
+          viewer_error: string | null
+          viewer_url: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          input_type: string
+          media_item_id: string
+          metadata?: Json
+          peak_activation_step: number
+          region_masks?: Json
+          result_payload?: Json
+          scores?: Json
+          segments?: Json
+          shape?: Json
+          summary?: Json
+          title?: string | null
+          user_id?: string
+          viewer_absolute_url?: string | null
+          viewer_available?: boolean
+          viewer_error?: string | null
+          viewer_url?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          input_type?: string
+          media_item_id?: string
+          metadata?: Json
+          peak_activation_step?: number
+          region_masks?: Json
+          result_payload?: Json
+          scores?: Json
+          segments?: Json
+          shape?: Json
+          summary?: Json
+          title?: string | null
+          user_id?: string
+          viewer_absolute_url?: string | null
+          viewer_available?: boolean
+          viewer_error?: string | null
+          viewer_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tribe_analysis_runs_media_item_id_fkey"
+            columns: ["media_item_id"]
+            isOneToOne: false
+            referencedRelation: "media_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
