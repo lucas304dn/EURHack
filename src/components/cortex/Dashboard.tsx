@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import elevenLabsLogo from "@/assets/elevenlabs-logo.png";
 import {
   generateAudio,
   generateImage,
@@ -48,6 +49,13 @@ const FORMATS: { id: Format; label: string; icon: typeof Video }[] = [
   { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
 ];
+
+const PLACEHOLDERS: Record<Format, string> = {
+  text: "Write persuasive ad copy for your next campaign...",
+  image: "Describe the image ad you want to create...",
+  video: "Describe the video ad you want to generate...",
+  audio: "Generate voiceover or speech powered by ElevenLabs...",
+};
 
 const VOICES: { id: string; label: string }[] = [
   { id: "JBFqnCBsd6RMkjVDRZzb", label: "George" },
@@ -146,7 +154,7 @@ export function Dashboard() {
           <input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your ad..."
+            placeholder={PLACEHOLDERS[format]}
             className="flex-1 bg-transparent py-3 text-base outline-none placeholder:text-muted-foreground/70"
             onKeyDown={(e) => {
               if (e.key === "Enter" && prompt.trim() && !gen.isPending) gen.mutate();
@@ -213,6 +221,16 @@ export function Dashboard() {
                   )}
                 >
                   <f.icon className="mr-2 h-4 w-4" /> {f.label}
+                  {f.id === "audio" && (
+                    <img
+                      src={elevenLabsLogo}
+                      alt="ElevenLabs"
+                      width={16}
+                      height={16}
+                      loading="lazy"
+                      className="ml-1.5 h-4 w-4 rounded-[4px] border border-white/15 object-cover"
+                    />
+                  )}
                   {format === f.id && (
                     <Check className="ml-auto h-3.5 w-3.5 text-primary" />
                   )}
