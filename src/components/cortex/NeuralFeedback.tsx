@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Info } from "lucide-react";
+import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Info, Video } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -432,6 +432,16 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
               </Button>
             </div>
 
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-xs leading-relaxed text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+                <Video className="h-3.5 w-3.5" />
+              </span>
+              <p>
+                Video analysis is most optimal for clips up to 10 seconds due to
+                compute requirements.
+              </p>
+            </div>
+
             {tab === "upload" ? (
               <div
                 {...getRootProps()}
@@ -627,7 +637,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   className="space-y-2"
                 >
                   <p className="mx-auto w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
-                    Please be patient, TRIBE V2 may take 3-6 minutes.
+                    Please be patient, TRIBE V2 may take 5-10 minutes.
                   </p>
                   <AnalysisProgressTicker />
                 </motion.div>

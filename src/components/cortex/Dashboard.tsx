@@ -14,6 +14,7 @@ import {
   Brain,
   Check,
   Download,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export function Dashboard() {
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<Format>("text");
   const [voice, setVoice] = useState<string>(VOICES[0].id);
+  const [hideVideoNotice, setHideVideoNotice] = useState(false);
   const [variants, setVariants] = useState<
     { prompt: string; items: string[] } | null
   >(null);
@@ -196,48 +198,76 @@ export function Dashboard() {
             </DropdownMenu>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-11 rounded-2xl border-primary/40 bg-primary/15 px-4 text-sm font-medium text-foreground shadow-sm hover:border-primary/60 hover:bg-primary/25"
-              >
-                <activeFmt.icon className="mr-2 h-4 w-4 text-primary" />
-                {activeFmt.label}
-                <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-1.5">
-              <div className="px-2 pb-1.5 pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
-                Output format
-              </div>
-              {FORMATS.map((f) => (
-                <DropdownMenuItem
-                  key={f.id}
-                  onClick={() => setFormat(f.id)}
-                  className={cn(
-                    "rounded-xl py-2",
-                    format === f.id && "bg-primary/15 text-foreground",
-                  )}
+          <div className="relative">
+            <AnimatePresence>
+              {format === "video" && !hideVideoNotice && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  className="absolute bottom-[calc(100%+14px)] right-0 z-30 w-80 rounded-2xl border border-black/10 bg-white p-4 pr-10 text-[12px] leading-relaxed text-neutral-800 shadow-[0_18px_55px_rgba(0,0,0,0.28)]"
                 >
-                  <f.icon className="mr-2 h-4 w-4" /> {f.label}
-                  {f.id === "audio" && (
-                    <img
-                      src={elevenLabsLogo}
-                      alt="ElevenLabs"
-                      width={16}
-                      height={16}
-                      loading="lazy"
-                      className="ml-1.5 h-4 w-4 rounded-[4px] border border-white/15 object-cover"
-                    />
-                  )}
-                  {format === f.id && (
-                    <Check className="ml-auto h-3.5 w-3.5 text-primary" />
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <span className="absolute -bottom-2 right-10 h-4 w-4 rotate-45 border-b border-r border-black/10 bg-white" />
+                  <button
+                    type="button"
+                    onClick={() => setHideVideoNotice(true)}
+                    aria-label="Dismiss video generation notice"
+                    className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <p className="font-medium text-neutral-950">Video generation note</p>
+                  <p className="mt-1">
+                    For demo purposes, a low quality AI video generation model is used.
+                    For actual production, higgsfield.ai is optimal for advertisement use case.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-11 rounded-2xl border-primary/40 bg-primary/15 px-4 text-sm font-medium text-foreground shadow-sm hover:border-primary/60 hover:bg-primary/25"
+                >
+                  <activeFmt.icon className="mr-2 h-4 w-4 text-primary" />
+                  {activeFmt.label}
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-1.5">
+                <div className="px-2 pb-1.5 pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Output format
+                </div>
+                {FORMATS.map((f) => (
+                  <DropdownMenuItem
+                    key={f.id}
+                    onClick={() => setFormat(f.id)}
+                    className={cn(
+                      "rounded-xl py-2",
+                      format === f.id && "bg-primary/15 text-foreground",
+                    )}
+                  >
+                    <f.icon className="mr-2 h-4 w-4" /> {f.label}
+                    {f.id === "audio" && (
+                      <img
+                        src={elevenLabsLogo}
+                        alt="ElevenLabs"
+                        width={16}
+                        height={16}
+                        loading="lazy"
+                        className="ml-1.5 h-4 w-4 rounded-[4px] border border-white/15 object-cover"
+                      />
+                    )}
+                    {format === f.id && (
+                      <Check className="ml-auto h-3.5 w-3.5 text-primary" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <Button
             onClick={() => gen.mutate()}
