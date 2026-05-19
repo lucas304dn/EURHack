@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Type as TypeIcon } from "lucide-react";
+import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { analyzeMedia, listMedia, uploadMedia, type TribeActivationResult } from "@/lib/cortex.functions";
@@ -45,6 +45,153 @@ function labelForScore(key: string) {
 
 function scoreInsight(key: string) {
   return SCORE_INSIGHTS[key] ?? "TRIBE-derived activation score for this approximate vertex range.";
+}
+
+function textPreview(item: MediaItem) {
+  return item.content_text?.trim() || item.title?.trim() || "Text preview unavailable.";
+}
+
+function waveformHeight(index: number, seed: string) {
+  const seedValue = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const wave = Math.abs(Math.sin((index + seedValue) * 0.46) * Math.cos((index + 3) * 0.28));
+  return 18 + wave * 70;
+}
+
+function AudioWaveform({ seed, compact = false }: { seed: string; compact?: boolean }) {
+  const bars = compact ? 34 : 56;
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-1">
+      {Array.from({ length: bars }).map((_, i) => {
+        const height = waveformHeight(i, seed);
+        return (
+          <span
+            key={i}
+            className={cn(
+              "rounded-full bg-primary/60 shadow-[0_0_14px_rgba(255,255,255,0.04)]",
+              compact ? "w-0.5" : "w-1",
+            )}
+            style={{
+              height: compact ? `${height}%` : `${10 + height * 0.8}px`,
+              opacity: 0.45 + (height / 100) * 0.45,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function GalleryMediaPreview({ item }: { item: MediaItem }) {
+  if (item.type === "video" && item.content_url) {
+    return <video src={item.content_url} className="h-full w-full object-cover" muted />;
+  }
+
+  if (item.type === "audio") {
+    return (
+      <div className="relative h-full w-full overflow-hidden rounded-lg bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.10),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))] px-4 py-5">
+        <AudioWaveform seed={item.id} compact />
+        <Mic className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/70" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-lg bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.12),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4">
+      <p className="line-clamp-5 text-xs leading-relaxed text-foreground/80">
+        {textPreview(item)}
+      </p>
+      <span className="mt-3 w-fit rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        Text
+      </span>
+    </div>
+  );
+}
+
+const BRAIN_VOLUME_SLICES = Array.from({ length: 19 }, (_, i) => i - 9);
+
+function BrainPlaceholder3D({ analyzing }: { analyzing: boolean }) {
+  return (
+    <div
+      role="img"
+      aria-label="Rotating 3D brain placeholder"
+      className="relative h-72 w-80 [perspective:920px]"
+    >
+      <motion.div
+        className="absolute inset-0 [transform-style:preserve-3d]"
+        initial={{ rotateX: -8, rotateY: -28 }}
+        animate={{
+          rotateX: [-8, 7, -8],
+          rotateY: 332,
+        }}
+        transition={{
+          rotateX: {
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          },
+          rotateY: {
+            duration: 22,
+            repeat: Infinity,
+            ease: "linear",
+          },
+        }}
+      >
+        <div
+          className="absolute inset-x-12 bottom-4 h-12 rounded-full bg-black/35 blur-xl"
+          style={{ transform: "translateZ(-54px) rotateX(82deg)" }}
+        />
+
+        {BRAIN_VOLUME_SLICES.map((slice) => {
+          const depth = slice * 4.2;
+          const distanceFromCenter = Math.abs(slice) / 9;
+          const scale = 1 - distanceFromCenter * 0.08;
+          const opacity = 0.055 + (1 - distanceFromCenter) * 0.06;
+
+          return (
+            <img
+              key={slice}
+              src={brainImg}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="brain-volume-slice absolute inset-0 h-full w-full select-none object-contain"
+              style={{
+                opacity,
+                transform: `translateZ(${depth}px) scale(${scale})`,
+              }}
+            />
+          );
+        })}
+
+        <img
+          src={brainImg}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="brain-volume-slice absolute inset-0 h-full w-full select-none object-contain"
+          style={{
+            opacity: analyzing ? 0.5 : 0.42,
+            transform: "translateZ(46px) scale(0.98)",
+          }}
+        />
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="absolute inset-4 rounded-full border border-white/10"
+        initial={{ rotateX: 72, rotate: 0 }}
+        animate={{ rotateX: 72, rotate: 360 }}
+        transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute inset-8 rounded-full border border-primary/20"
+        initial={{ rotateY: 68, rotate: 0 }}
+        animate={{ rotateY: 68, rotate: -360 }}
+        transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
 }
 
 export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) {
@@ -187,9 +334,10 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
   const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-2">
       {/* LEFT */}
-      <section className="glass-card flex flex-col rounded-3xl p-7">
+      <section className="glass-card neural-input-panel flex flex-col rounded-3xl p-7">
         {!selected ? (
           <>
             <h2 className="text-xl font-semibold tracking-tight">
@@ -253,13 +401,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                     className="glass-card rounded-xl p-3 text-left transition-all hover:border-primary/40"
                   >
                     <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-popover/50">
-                      {m.type === "video" && m.content_url ? (
-                        <video src={m.content_url} className="h-full w-full object-cover" muted />
-                      ) : m.type === "audio" ? (
-                        <Mic className="h-6 w-6 text-muted-foreground" />
-                      ) : (
-                        <TypeIcon className="h-6 w-6 text-muted-foreground" />
-                      )}
+                      <GalleryMediaPreview item={m as MediaItem} />
                     </div>
                     <p className="line-clamp-1 text-xs font-medium">
                       {m.title ?? "Untitled"}
@@ -310,15 +452,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-border bg-popover/40 p-6">
                     <div className="mb-4 flex items-end justify-center gap-1">
-                      {Array.from({ length: 56 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="w-1 rounded-full bg-primary/60"
-                          style={{
-                            height: `${10 + Math.abs(Math.sin(i * 0.4)) * 60}px`,
-                          }}
-                        />
-                      ))}
+                      <AudioWaveform seed={selected.id} />
                     </div>
                     <audio src={selected.content_url} controls className="w-full" />
                   </div>
@@ -397,17 +531,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
               </p>
             </div>
           ) : (
-            <motion.img
-              src={brainImg}
-              alt="Brain placeholder"
-              width={1024}
-              height={1024}
-              loading="lazy"
-              className={cn(
-                "h-72 w-auto select-none object-contain opacity-40 transition-all duration-700",
-                analyzing && "animate-pulse",
-              )}
-            />
+            <BrainPlaceholder3D analyzing={analyzing} />
           )}
         </div>
 
@@ -522,6 +646,16 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
           )}
         </AnimatePresence>
       </section>
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-center"
+      >
+        <p className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_34px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+          Powered by <span className="text-foreground/80">Meta TRIBE V2</span>.
+        </p>
+      </motion.div>
     </div>
   );
 }
