@@ -21,7 +21,7 @@
 
 **Generate ads, test them with AI, and understand how they may perform before launch.**
 
-Cortex is a hackathon project built for EurHackNL 2026. It helps users create ad creatives in different formats, save them, and analyze text, audio, or video ads with TRIBE v2 neural feedback.
+Cortex is a hackathon project built for EurHackNL 2026. It helps users create ads in different formats, save them, and analyze text, audio, or video ads with TRIBE v2 neural feedback.
 We want to make marketing more accessible to founders. Instead of needing a big agency budget, lab testing, or a full marketing team, Cortex gives early feedback on how a creative might perform in areas like attention, memory, emotion, language, and overall impact.
 
 
