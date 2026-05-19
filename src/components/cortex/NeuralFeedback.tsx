@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
@@ -101,6 +101,141 @@ function AudioWaveform({ seed, compact = false }: { seed: string; compact?: bool
           />
         );
       })}
+    </div>
+  );
+}
+
+function LiveAudioPreview({ src, seed }: { src: string; seed: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const frequencyDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const fallbackTimeRef = useRef(0);
+  const bars = 56;
+  const idleLevels = useMemo(
+    () => Array.from({ length: bars }, (_, i) => 10 + waveformHeight(i, seed) * 0.8),
+    [seed],
+  );
+  const [levels, setLevels] = useState(idleLevels);
+
+  useEffect(() => {
+    setLevels(idleLevels);
+  }, [idleLevels]);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current != null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+      audioContextRef.current?.close().catch(() => undefined);
+      frameRef.current = null;
+      audioContextRef.current = null;
+      analyserRef.current = null;
+      sourceRef.current = null;
+      frequencyDataRef.current = null;
+    };
+  }, []);
+
+  const stopVisualizer = (reset = false) => {
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    if (reset) setLevels(idleLevels);
+  };
+
+  const fallbackLevels = () => {
+    fallbackTimeRef.current += 0.18;
+    return idleLevels.map((level, i) => {
+      const pulse =
+        Math.abs(Math.sin(fallbackTimeRef.current + i * 0.38)) *
+        Math.abs(Math.cos(fallbackTimeRef.current * 0.62 + i * 0.17));
+      return Math.max(10, Math.min(90, level * 0.45 + pulse * 72));
+    });
+  };
+
+  const startVisualizer = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      const context = audioContextRef.current ?? new AudioContextCtor();
+      audioContextRef.current = context;
+
+      if (!sourceRef.current) {
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.82;
+        const source = context.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(context.destination);
+        analyserRef.current = analyser;
+        sourceRef.current = source;
+        frequencyDataRef.current = new Uint8Array(analyser.frequencyBinCount);
+      }
+
+      if (context.state === "suspended") {
+        await context.resume();
+      }
+    } catch (error) {
+      console.warn("Audio analyser unavailable; using animated fallback waveform.", error);
+    }
+
+    const tick = () => {
+      const analyser = analyserRef.current;
+      const frequencyData = frequencyDataRef.current;
+
+      if (analyser && frequencyData) {
+        analyser.getByteFrequencyData(frequencyData);
+        const next = Array.from({ length: bars }, (_, i) => {
+          const start = Math.floor((i / bars) * frequencyData.length);
+          const end = Math.max(start + 1, Math.floor(((i + 1) / bars) * frequencyData.length));
+          let total = 0;
+          for (let j = start; j < end; j++) total += frequencyData[j] ?? 0;
+          const average = total / (end - start);
+          return 10 + (average / 255) * 86;
+        });
+        const hasSignal = next.some((height) => height > 12);
+        setLevels(hasSignal ? next : fallbackLevels());
+      } else {
+        setLevels(fallbackLevels());
+      }
+
+      frameRef.current = requestAnimationFrame(tick);
+    };
+
+    if (frameRef.current == null) {
+      frameRef.current = requestAnimationFrame(tick);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-popover/40 p-6">
+      <div className="mb-4 flex h-32 items-end justify-center gap-1">
+        {levels.map((height, i) => (
+          <span
+            key={i}
+            className="w-1 rounded-full bg-primary/70 shadow-[0_0_14px_rgba(255,255,255,0.05)] transition-[height,opacity] duration-75"
+            style={{
+              height: `${height}px`,
+              opacity: 0.4 + Math.min(height / 100, 1) * 0.55,
+            }}
+          />
+        ))}
+      </div>
+      <audio
+        ref={audioRef}
+        src={src}
+        controls
+        crossOrigin="anonymous"
+        className="w-full"
+        onPlay={() => void startVisualizer()}
+        onPause={() => stopVisualizer()}
+        onEnded={() => stopVisualizer(true)}
+      />
     </div>
   );
 }
@@ -536,12 +671,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   )}
                   {selected.type === "audio" && selected.content_url && (
                     <div className="space-y-4">
-                      <div className="rounded-2xl border border-border bg-popover/40 p-6">
-                        <div className="mb-4 flex items-end justify-center gap-1">
-                          <AudioWaveform seed={selected.id} />
-                        </div>
-                        <audio src={selected.content_url} controls className="w-full" />
-                      </div>
+                      <LiveAudioPreview src={selected.content_url} seed={selected.id} />
                       <TranscriptStream key={selected.id} text={selected.content_text ?? ""} />
                     </div>
                   )}
