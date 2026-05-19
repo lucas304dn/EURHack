@@ -108,6 +108,13 @@ function GalleryMediaPreview({ item }: { item: MediaItem }) {
 }
 
 const BRAIN_VOLUME_SLICES = Array.from({ length: 19 }, (_, i) => i - 9);
+const ANALYSIS_PROGRESS_STEPS = [
+  "Converting text via TTS...",
+  "Analyzing potential audio response...",
+  "Analyzing potential video response...",
+  "Extracting multimodal event timing...",
+  "Projecting activation onto cortex...",
+];
 
 function BrainPlaceholder3D({ analyzing }: { analyzing: boolean }) {
   return (
@@ -191,6 +198,43 @@ function BrainPlaceholder3D({ analyzing }: { analyzing: boolean }) {
         transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
       />
     </div>
+  );
+}
+
+function AnalysisProgressTicker() {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [visibleText, setVisibleText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const fullText = ANALYSIS_PROGRESS_STEPS[stepIndex];
+    const atFullText = visibleText === fullText;
+    const atEmptyText = visibleText.length === 0;
+    const delay = atFullText && !deleting ? 1100 : deleting ? 28 : 45;
+
+    const id = window.setTimeout(() => {
+      if (!deleting && atFullText) {
+        setDeleting(true);
+        return;
+      }
+
+      if (deleting && atEmptyText) {
+        setDeleting(false);
+        setStepIndex((current) => (current + 1) % ANALYSIS_PROGRESS_STEPS.length);
+        return;
+      }
+
+      setVisibleText(fullText.slice(0, visibleText.length + (deleting ? -1 : 1)));
+    }, delay);
+
+    return () => window.clearTimeout(id);
+  }, [deleting, stepIndex, visibleText]);
+
+  return (
+    <p className="mx-auto flex min-h-5 w-fit items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.055] px-3 py-1 text-[11px] font-medium text-foreground/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+      <span>{visibleText}</span>
+      <span className="h-3.5 w-px animate-pulse bg-primary/70" aria-hidden="true" />
+    </p>
   );
 }
 
@@ -334,7 +378,23 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
   const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <motion.header
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-2 pb-1"
+      >
+        <p className="text-xs uppercase tracking-[0.28em] text-primary">
+          Neural Feedback
+        </p>
+        <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
+          Predict brain activation from your content
+        </h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          Upload or select text, audio, or video to estimate cortical response patterns with TRIBE V2.
+        </p>
+      </motion.header>
+
       <div className="grid gap-6 lg:grid-cols-2">
       {/* LEFT */}
       <section className="glass-card neural-input-panel flex flex-col rounded-3xl p-7">
@@ -537,17 +597,31 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
 
         <AnimatePresence mode="wait">
           {!analyzed ? (
-            <motion.p
+            <motion.div
               key="caption"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="mt-6 text-center text-sm text-muted-foreground"
+              className="mt-6 space-y-3 text-center"
             >
-              {analyzing
-                ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
-                : "Select media to begin neural analysis"}
-            </motion.p>
+              <p className="text-sm text-muted-foreground">
+                {analyzing
+                  ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
+                  : "Select media to begin neural analysis"}
+              </p>
+              {analyzing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <p className="mx-auto w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                    Please be patient, TRIBE V2 may take 3-6 minutes.
+                  </p>
+                  <AnalysisProgressTicker />
+                </motion.div>
+              )}
+            </motion.div>
           ) : (
             <motion.div
               key="analysis"
