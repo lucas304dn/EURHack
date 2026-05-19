@@ -105,51 +105,129 @@ async function callVideoBackend(prompt: string, imageUrls?: string[]): Promise<s
   return json.url;
 }
 
-// ---------- IMAGE (Lovable AI Gateway — Nano Banana) ----------
+type GeminiImagePart = {
+  text?: string;
+  inline_data?: {
+    mime_type: string;
+    data: string;
+  };
+};
+
+type GeminiResponsePart = {
+  text?: string;
+  inlineData?: {
+    mimeType?: string;
+    data?: string;
+  };
+  inline_data?: {
+    mime_type?: string;
+    data?: string;
+  };
+};
+
+type GeminiGenerateResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiResponsePart[];
+    };
+    finishReason?: string;
+  }>;
+  error?: {
+    code?: number;
+    message?: string;
+    status?: string;
+  };
+};
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function imageUrlToGeminiPart(url: string): Promise<GeminiImagePart> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to load reference image: ${res.status}`);
+  }
+
+  const contentType = res.headers.get("content-type") || "image/png";
+  if (!contentType.startsWith("image/")) {
+    throw new Error("Reference URL did not return an image");
+  }
+
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  return {
+    inline_data: {
+      mime_type: contentType.split(";")[0],
+      data: bytesToBase64(bytes),
+    },
+  };
+}
+
+function getGeminiImage(response: GeminiGenerateResponse) {
+  const parts = response.candidates?.flatMap((candidate) => candidate.content?.parts ?? []) ?? [];
+  for (const part of parts) {
+    const inlineData = part.inlineData ?? part.inline_data;
+    const imageData = inlineData?.data;
+    if (imageData) {
+      return {
+        base64: imageData,
+        contentType: inlineData?.mimeType ?? inlineData?.mime_type ?? "image/png",
+      };
+    }
+  }
+  return null;
+}
+
+// ---------- IMAGE (Gemini API / Nano Banana) ----------
 export const generateImage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => GenMediaInput.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY is not configured");
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("GEMINI_API_KEY is not configured");
 
-    const userContent: Array<Record<string, unknown>> = [
-      { type: "text", text: data.prompt },
-    ];
+    const parts: GeminiImagePart[] = [{ text: data.prompt }];
     for (const url of data.imageUrls ?? []) {
-      userContent.push({ type: "image_url", image_url: { url } });
+      parts.push(await imageUrlToGeminiPart(url));
     }
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${key}`,
+        "x-goog-api-key": key,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: userContent }],
-        modalities: ["image", "text"],
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+        },
       }),
     });
 
     if (!res.ok) {
       const t = await res.text();
-      if (res.status === 429) throw new Error("Rate limited by Lovable AI — try again shortly.");
-      if (res.status === 402) throw new Error("Lovable AI credits exhausted — top up in workspace settings.");
-      throw new Error(`Lovable AI ${res.status}: ${t.slice(0, 200)}`);
+      if (res.status === 429) throw new Error("Gemini image generation is rate limited. Try again shortly.");
+      if (res.status === 403) throw new Error("Gemini API denied image generation. Check that billing/quota is enabled for this API key.");
+      throw new Error(`Gemini image generation ${res.status}: ${t.slice(0, 200)}`);
     }
 
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
-    };
-    const dataUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!dataUrl) throw new Error("Lovable AI returned no image");
+    const json = (await res.json()) as GeminiGenerateResponse;
+    if (json.error) {
+      throw new Error(`Gemini image generation failed: ${json.error.message ?? json.error.status ?? "unknown error"}`);
+    }
 
-    const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-    const mimeMatch = dataUrl.match(/^data:([^;]+);/);
-    const contentType = mimeMatch?.[1] ?? "image/png";
+    const image = getGeminiImage(json);
+    if (!image) throw new Error("Gemini returned no image");
+
+    const contentType = image.contentType;
     const ext = contentType.split("/")[1] ?? "png";
-    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
 
     const path = `image/${crypto.randomUUID()}.${ext}`;
     const up = await supabaseAdmin.storage
