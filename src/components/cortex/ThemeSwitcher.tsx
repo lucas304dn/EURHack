@@ -39,11 +39,7 @@ export function ThemeSwitcher() {
           <ChevronUp className="h-3.5 w-3.5 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        side="top"
-        align="start"
-        className="w-56 rounded-2xl p-1.5"
-      >
+      <DropdownMenuContent side="top" align="start" className="w-56 rounded-2xl p-1.5">
         <div className="px-2 pb-1.5 pt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
           Theme
         </div>
@@ -63,10 +59,7 @@ export function ThemeSwitcher() {
                 className="flex h-6 w-6 items-center justify-center rounded-md border border-border/60"
                 style={{ background: t.swatch.bg }}
               >
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: t.swatch.fg }}
-                />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.swatch.fg }} />
               </span>
               <Icon className="h-3.5 w-3.5" />
               <span className="flex-1 text-sm">{t.label}</span>

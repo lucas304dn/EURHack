@@ -16,11 +16,7 @@ export function CortexSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border/60 bg-sidebar p-6 md:flex">
       <Link to="/dashboard" className="mb-12 flex items-center leading-none">
-        <img
-          src={cortexLogo}
-          alt="Cortex"
-          className="h-10 w-10 object-contain"
-        />
+        <img src={cortexLogo} alt="Cortex" className="h-10 w-10 object-contain" />
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1.5">

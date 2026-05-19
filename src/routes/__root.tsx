@@ -12,7 +12,6 @@ import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/cortex/ThemeProvider";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -136,4 +135,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-
