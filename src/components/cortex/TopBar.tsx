@@ -1,5 +1,5 @@
 import { Bell } from "lucide-react";
-import avatar from "@/assets/avatar.jpg";
+import avatar from "@/assets/eurhacknl-avatar.svg";
 
 export function TopBar() {
   return (
@@ -16,14 +16,14 @@ export function TopBar() {
       <div className="flex items-center gap-3 rounded-full border border-border/70 bg-card/60 py-1.5 pl-1.5 pr-4">
         <img
           src={avatar}
-          alt="Nikitas Papadopoulos"
+          alt="eurhacknl"
           width={32}
           height={32}
           loading="lazy"
           className="h-8 w-8 rounded-full object-cover"
         />
         <div className="hidden flex-col leading-tight sm:flex">
-          <span className="text-sm font-medium">Nikitas Papadopoulos</span>
+          <span className="text-sm font-medium">eurhacknl</span>
           <span className="text-[11px] text-muted-foreground">Marketing Lead</span>
         </div>
       </div>
