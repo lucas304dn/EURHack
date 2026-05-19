@@ -1,0 +1,1810 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/rkzzso",
+    "id": "rkzzso",
+    "slide": 6,
+    "layoutId": "9b11c032-8539-4eb7-98df-cd84361d8138",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "9cbb66a7-f642-4ae0-8079-d7b45c88a4ec",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "9b11c032-8539-4eb7-98df-cd84361d8138",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "9cbb66a7-f642-4ae0-8079-d7b45c88a4ec",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "9cbb66a7-f642-4ae0-8079-d7b45c88a4ec",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrmhk3q",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#0F1115",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#101821",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "3",
+      "bbox": [
+        58,
+        682,
+        1164,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#26313C",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "4",
+      "name": "kicker-marker",
+      "bbox": [
+        58,
+        53,
+        10,
+        10
+      ],
+      "geometry": "rect",
+      "fillColor": "#8FD7FF",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "5",
+      "name": "kicker-label",
+      "bbox": [
+        80,
+        50,
+        540,
+        18
+      ],
+      "geometry": "rect",
+      "text": "B U S I N E S S   M O D E L   C A N V A S",
+      "textPreview": "B U S I N E S S   M O D E L   C A N V A S",
+      "resolvedFontSize": 9.51,
+      "resolvedTextStyle": {
+        "fontSize": 9.51,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "B U S I N E S S   M O D E L   C A N V A S"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "B U S I N E S S   M O D E L   C A N V A S",
+          "runs": [
+            {
+              "index": 1,
+              "text": "B U S I N E S S   M O D E L   C A N V A S",
+              "fontSize": 9.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "6",
+      "bbox": [
+        58,
+        86,
+        920,
+        96
+      ],
+      "geometry": "rect",
+      "text": "The model is a SaaS-plus-usage workflow for marketers and agencies.",
+      "textPreview": "The model is a SaaS-plus-usage workflow for marketers and agencies.",
+      "resolvedFontSize": 38,
+      "resolvedTextStyle": {
+        "fontSize": 38,
+        "typeface": "Georgia",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The model is a SaaS-plus-usage workflow for"
+          },
+          {
+            "index": 2,
+            "text": "marketers and agencies."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The model is a SaaS-plus-usage workflow for marketers and agencies.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The model is a SaaS-plus-usage workflow for marketers and agencies.",
+              "fontSize": 38,
+              "typeface": "Georgia",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "7",
+      "bbox": [
+        58,
+        188,
+        218,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/obm58z25",
+      "id": "8",
+      "bbox": [
+        74,
+        202,
+        186,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Key Partners",
+      "textPreview": "Key Partners",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Key Partners"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Key Partners",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Key Partners",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hwfyxobm",
+      "id": "9",
+      "bbox": [
+        74,
+        232,
+        186,
+        152
+      ],
+      "geometry": "rect",
+      "text": "Model/data licensors\nCloud + GPU providers\nOpenRouter/Gemini/ElevenLabs\nAgency partners",
+      "textPreview": "Model/data licensors | Cloud + GPU providers | OpenRouter/Gemini/ElevenLabs | Agency partners",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Model/data licensors"
+          },
+          {
+            "index": 2,
+            "text": "Cloud + GPU providers"
+          },
+          {
+            "index": 3,
+            "text": "OpenRouter/Gemini/ElevenLabs"
+          },
+          {
+            "index": 4,
+            "text": "Agency partners"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Model/data licensors",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Model/data licensors",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Cloud + GPU providers",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cloud + GPU providers",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "OpenRouter/Gemini/ElevenLabs",
+          "runs": [
+            {
+              "index": 1,
+              "text": "OpenRouter/Gemini/ElevenLabs",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Agency partners",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agency partners",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t83itgfm",
+      "id": "10",
+      "bbox": [
+        292,
+        188,
+        218,
+        100
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4nap4r65",
+      "id": "11",
+      "bbox": [
+        308,
+        202,
+        186,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Key Activities",
+      "textPreview": "Key Activities",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Key Activities"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Key Activities",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Key Activities",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b2hwfyxo",
+      "id": "12",
+      "bbox": [
+        308,
+        232,
+        186,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Generate creative\nPredict neural response\nInterpret scores\nExport/report",
+      "textPreview": "Generate creative | Predict neural response | Interpret scores | Export/report",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Generate creative"
+          },
+          {
+            "index": 2,
+            "text": "Predict neural response"
+          },
+          {
+            "index": 3,
+            "text": "Interpret scores"
+          },
+          {
+            "index": 4,
+            "text": "Export/report"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Generate creative",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Generate creative",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Predict neural response",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Predict neural response",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Interpret scores",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Interpret scores",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Export/report",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Export/report",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mhk3q5o7",
+      "id": "13",
+      "bbox": [
+        526,
+        188,
+        228,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#203141",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/twra5gbq",
+      "id": "14",
+      "bbox": [
+        542,
+        202,
+        196,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Value Proposition",
+      "textPreview": "Value Proposition",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Value Proposition"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Value Proposition",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Value Proposition",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#8FD7FF",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4byhgn29",
+      "id": "15",
+      "bbox": [
+        542,
+        232,
+        196,
+        152
+      ],
+      "geometry": "rect",
+      "text": "Pre-spend creative intelligence: generate and rank ads before paid budget is committed.",
+      "textPreview": "Pre-spend creative intelligence: generate and rank ads before paid budget is committed.",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Pre-spend creative intelligence:"
+          },
+          {
+            "index": 2,
+            "text": "generate and rank ads before paid"
+          },
+          {
+            "index": 3,
+            "text": "budget is committed."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Pre-spend creative intelligence: generate and rank ads before paid budget is committed.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Pre-spend creative intelligence: generate and rank ads before paid budget is committed.",
+              "fontSize": 14,
+              "typeface": "Aptos",
+              "color": "#F6F8FB"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bq1oryts",
+      "id": "16",
+      "bbox": [
+        770,
+        188,
+        210,
+        100
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m58z25kb",
+      "id": "17",
+      "bbox": [
+        786,
+        202,
+        178,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Customer Relationships",
+      "textPreview": "Customer Relationships",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Customer Relationships"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Customer Relationships",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Customer Relationships",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsvu9kni",
+      "id": "18",
+      "bbox": [
+        786,
+        232,
+        178,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Self-serve onboarding\nAgency pilots\nQuarterly creative reviews",
+      "textPreview": "Self-serve onboarding | Agency pilots | Quarterly creative reviews",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Self-serve onboarding"
+          },
+          {
+            "index": 2,
+            "text": "Agency pilots"
+          },
+          {
+            "index": 3,
+            "text": "Quarterly creative reviews"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Self-serve onboarding",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Self-serve onboarding",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Agency pilots",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agency pilots",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Quarterly creative reviews",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Quarterly creative reviews",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/47y1kre1",
+      "id": "19",
+      "bbox": [
+        996,
+        188,
+        210,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/g3ex0nux",
+      "id": "20",
+      "bbox": [
+        1012,
+        202,
+        178,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Customer Segments",
+      "textPreview": "Customer Segments",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Customer Segments"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Customer Segments",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Customer Segments",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5o7qpg3e",
+      "id": "21",
+      "bbox": [
+        1012,
+        232,
+        178,
+        152
+      ],
+      "geometry": "rect",
+      "text": "SMB marketers\nPerformance agencies\nDTC brands\nBrand labs",
+      "textPreview": "SMB marketers | Performance agencies | DTC brands | Brand labs",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SMB marketers"
+          },
+          {
+            "index": 2,
+            "text": "Performance agencies"
+          },
+          {
+            "index": 3,
+            "text": "DTC brands"
+          },
+          {
+            "index": 4,
+            "text": "Brand labs"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SMB marketers",
+          "runs": [
+            {
+              "index": 1,
+              "text": "SMB marketers",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Performance agencies",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Performance agencies",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "DTC brands",
+          "runs": [
+            {
+              "index": 1,
+              "text": "DTC brands",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Brand labs",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Brand labs",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxobm58z",
+      "id": "22",
+      "bbox": [
+        292,
+        304,
+        218,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nih4byhg",
+      "id": "23",
+      "bbox": [
+        308,
+        318,
+        186,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Key Resources",
+      "textPreview": "Key Resources",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Key Resources"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Key Resources",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Key Resources",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gr2p8nqx",
+      "id": "24",
+      "bbox": [
+        308,
+        348,
+        186,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Cortex app\nAnalysis data\nCommercial model rights\nML/product team",
+      "textPreview": "Cortex app | Analysis data | Commercial model rights | ML/product team",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Cortex app"
+          },
+          {
+            "index": 2,
+            "text": "Analysis data"
+          },
+          {
+            "index": 3,
+            "text": "Commercial model rights"
+          },
+          {
+            "index": 4,
+            "text": "ML/product team"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Cortex app",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cortex app",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Analysis data",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Analysis data",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Commercial model rights",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Commercial model rights",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "ML/product team",
+          "runs": [
+            {
+              "index": 1,
+              "text": "ML/product team",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9cvixcze",
+      "id": "25",
+      "bbox": [
+        770,
+        304,
+        210,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ylc7u54z",
+      "id": "26",
+      "bbox": [
+        786,
+        318,
+        178,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Channels",
+      "textPreview": "Channels",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Channels"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Channels",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Channels",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r65wjudg",
+      "id": "27",
+      "bbox": [
+        786,
+        348,
+        178,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Hackathon demo\nFounder-led outbound\nAgency partnerships\nPlatform integrations",
+      "textPreview": "Hackathon demo | Founder-led outbound | Agency partnerships | Platform integrations",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hackathon demo"
+          },
+          {
+            "index": 2,
+            "text": "Founder-led outbound"
+          },
+          {
+            "index": 3,
+            "text": "Agency partnerships"
+          },
+          {
+            "index": 4,
+            "text": "Platform integrations"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hackathon demo",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hackathon demo",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Founder-led outbound",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Founder-led outbound",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Agency partnerships",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agency partnerships",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Platform integrations",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Platform integrations",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gfmlkjm1",
+      "id": "28",
+      "bbox": [
+        58,
+        520,
+        552,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/90je9cvi",
+      "id": "29",
+      "bbox": [
+        74,
+        534,
+        520,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Cost Structure",
+      "textPreview": "Cost Structure",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Cost Structure"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Cost Structure",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cost Structure",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "30",
+      "bbox": [
+        74,
+        564,
+        520,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Inference/API costs\nGPU/model infra\nEngineering\nLegal/licensing\nGTM",
+      "textPreview": "Inference/API costs | GPU/model infra | Engineering | Legal/licensing | GTM",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Inference/API costs"
+          },
+          {
+            "index": 2,
+            "text": "GPU/model infra"
+          },
+          {
+            "index": 3,
+            "text": "Engineering"
+          },
+          {
+            "index": 4,
+            "text": "Legal/licensing"
+          },
+          {
+            "index": 5,
+            "text": "GTM"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Inference/API costs",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Inference/API costs",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "GPU/model infra",
+          "runs": [
+            {
+              "index": 1,
+              "text": "GPU/model infra",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Engineering",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Engineering",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Legal/licensing",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Legal/licensing",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "text": "GTM",
+          "runs": [
+            {
+              "index": 1,
+              "text": "GTM",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "31",
+      "bbox": [
+        634,
+        520,
+        572,
+        94
+      ],
+      "geometry": "rect",
+      "fillColor": "#171A20",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "32",
+      "bbox": [
+        650,
+        534,
+        540,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Revenue Streams",
+      "textPreview": "Revenue Streams",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Revenue Streams"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Revenue Streams",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Revenue Streams",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#F6F8FB",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "33",
+      "bbox": [
+        650,
+        564,
+        540,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Subscriptions\nUsage per analysis\nPilot packages\nReports/API fees",
+      "textPreview": "Subscriptions | Usage per analysis | Pilot packages | Reports/API fees",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Subscriptions"
+          },
+          {
+            "index": 2,
+            "text": "Usage per analysis"
+          },
+          {
+            "index": 3,
+            "text": "Pilot packages"
+          },
+          {
+            "index": 4,
+            "text": "Reports/API fees"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Subscriptions",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Subscriptions",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Usage per analysis",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Usage per analysis",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Pilot packages",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Pilot packages",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "text": "Reports/API fees",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Reports/API fees",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#A9B2C3"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "34",
+      "bbox": [
+        58,
+        690,
+        760,
+        14
+      ],
+      "geometry": "rect",
+      "text": "Cortex investor package | directional model",
+      "textPreview": "Cortex investor package | directional model",
+      "resolvedFontSize": 8,
+      "resolvedTextStyle": {
+        "fontSize": 8,
+        "typeface": "Aptos",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Cortex investor package | directional model"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Cortex investor package | directional model",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cortex investor package | directional model",
+              "fontSize": 8,
+              "typeface": "Aptos",
+              "color": "#687386"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "35",
+      "bbox": [
+        1180,
+        686,
+        44,
+        18
+      ],
+      "geometry": "rect",
+      "text": "06",
+      "textPreview": "06",
+      "resolvedFontSize": 11,
+      "resolvedTextStyle": {
+        "fontSize": 11,
+        "typeface": "Georgia",
+        "bold": true,
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "06"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "06",
+          "runs": [
+            {
+              "index": 1,
+              "text": "06",
+              "fontSize": 11,
+              "typeface": "Georgia",
+              "color": "#A9B2C3",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}
