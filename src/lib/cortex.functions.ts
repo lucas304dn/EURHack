@@ -37,7 +37,7 @@ export const generateText = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              "You are a world-class ad copywriter. Return ONLY a JSON object of the form {\"variants\":[\"...\",\"...\",\"...\"]} with exactly 3 short, punchy ad copy variants (max 280 chars each). No extra text.",
+              'You are a world-class ad copywriter. Return ONLY a JSON object of the form {"variants":["...","...","..."]} with exactly 3 short, punchy ad copy variants (max 280 chars each). No extra text.',
           },
           { role: "user", content: data.prompt },
         ],
@@ -61,7 +61,7 @@ export const generateText = createServerFn({ method: "POST" })
     } catch {
       variants = content
         .split(/\n+/)
-        .map((s) => s.replace(/^[\d\-\.\)\s]+/, "").trim())
+        .map((s) => s.replace(/^[\d.)\s-]+/, "").trim())
         .filter(Boolean)
         .slice(0, 3);
     }
@@ -187,7 +187,8 @@ async function providerError(res: Response, provider: string) {
   try {
     const json = JSON.parse(text) as { error?: unknown; message?: unknown; detail?: unknown };
     const message = extractProviderMessage(json.error ?? json.message ?? json.detail);
-    if (message) return `${provider} ${res.status}: ${typeof message === "string" ? message : JSON.stringify(message)}`;
+    if (message)
+      return `${provider} ${res.status}: ${typeof message === "string" ? message : JSON.stringify(message)}`;
   } catch {
     // Fall through to the raw text excerpt.
   }
@@ -215,11 +216,7 @@ function extractProviderMessage(value: unknown): string {
   if (typeof value === "object") {
     const record = value as Record<string, unknown>;
     return extractProviderMessage(
-      record.message ??
-        record.error ??
-        record.detail ??
-        record.upstreamBody ??
-        record.cause,
+      record.message ?? record.error ?? record.detail ?? record.upstreamBody ?? record.cause,
     );
   }
   return String(value).slice(0, 320);
@@ -251,8 +248,14 @@ function isRetryableVideoModelError(message: string) {
   );
 }
 
-async function requestPollinationsVideo(prompt: string, key: string, model: string): Promise<Uint8Array> {
-  const url = new URL(`https://gen.pollinations.ai/video/${encodeURIComponent(videoPromptForProvider(prompt))}`);
+async function requestPollinationsVideo(
+  prompt: string,
+  key: string,
+  model: string,
+): Promise<Uint8Array> {
+  const url = new URL(
+    `https://gen.pollinations.ai/video/${encodeURIComponent(videoPromptForProvider(prompt))}`,
+  );
   url.searchParams.set("model", model);
   url.searchParams.set("duration", "4");
   url.searchParams.set("aspectRatio", "16:9");
@@ -270,7 +273,11 @@ async function requestPollinationsVideo(prompt: string, key: string, model: stri
 
   if (!res.ok) {
     const message = await providerError(res, `Pollinations video generation (${model})`);
-    throw new PollinationsVideoError(message, model, res.status >= 500 || isRetryableVideoModelError(message));
+    throw new PollinationsVideoError(
+      message,
+      model,
+      res.status >= 500 || isRetryableVideoModelError(message),
+    );
   }
 
   const contentType = res.headers.get("content-type") ?? "";
@@ -316,7 +323,9 @@ async function generatePollinationsVideo(prompt: string): Promise<Uint8Array> {
     }
   }
 
-  throw new Error(`Pollinations video generation failed for ${models.join(", ")}. ${errors.join(" | ")}`);
+  throw new Error(
+    `Pollinations video generation failed for ${models.join(", ")}. ${errors.join(" | ")}`,
+  );
 }
 
 // ---------- IMAGE (Gemini API / Nano Banana) ----------
@@ -332,30 +341,39 @@ export const generateImage = createServerFn({ method: "POST" })
     }
 
     const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": key,
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [{ role: "user", parts }],
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+          },
+        }),
+      },
+    );
 
     if (!res.ok) {
       const t = await res.text();
-      if (res.status === 429) throw new Error("Gemini image generation is rate limited. Try again shortly.");
-      if (res.status === 403) throw new Error("Gemini API denied image generation. Check that billing/quota is enabled for this API key.");
+      if (res.status === 429)
+        throw new Error("Gemini image generation is rate limited. Try again shortly.");
+      if (res.status === 403)
+        throw new Error(
+          "Gemini API denied image generation. Check that billing/quota is enabled for this API key.",
+        );
       throw new Error(`Gemini image generation ${res.status}: ${t.slice(0, 200)}`);
     }
 
     const json = (await res.json()) as GeminiGenerateResponse;
     if (json.error) {
-      throw new Error(`Gemini image generation failed: ${json.error.message ?? json.error.status ?? "unknown error"}`);
+      throw new Error(
+        `Gemini image generation failed: ${json.error.message ?? json.error.status ?? "unknown error"}`,
+      );
     }
 
     const image = getGeminiImage(json);
@@ -366,9 +384,7 @@ export const generateImage = createServerFn({ method: "POST" })
     const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
 
     const path = `image/${crypto.randomUUID()}.${ext}`;
-    const up = await supabaseAdmin.storage
-      .from("media")
-      .upload(path, bytes, { contentType });
+    const up = await supabaseAdmin.storage.from("media").upload(path, bytes, { contentType });
     if (up.error) throw new Error(up.error.message);
     const { data: pub } = supabaseAdmin.storage.from("media").getPublicUrl(path);
 
@@ -404,8 +420,6 @@ export const generateVideo = createServerFn({ method: "POST" })
     return { url: pub.publicUrl };
   });
 
-
-
 // ---------- AUDIO (script via OpenRouter, then ElevenLabs TTS) ----------
 async function generateAdScript(prompt: string): Promise<string> {
   const key = process.env.OPENROUTER_API_KEY;
@@ -417,8 +431,8 @@ async function generateAdScript(prompt: string): Promise<string> {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
     },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
       messages: [
         {
           role: "system",
@@ -429,7 +443,8 @@ async function generateAdScript(prompt: string): Promise<string> {
       ],
     }),
   });
-  if (!res.ok) throw new Error(`Script generation ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(`Script generation ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const script = (json.choices?.[0]?.message?.content ?? "").trim().replace(/^["']|["']$/g, "");
   if (!script) throw new Error("Empty script from model");
@@ -489,7 +504,6 @@ export const generateAudio = createServerFn({ method: "POST" })
     return { url: pub.publicUrl, script };
   });
 
-
 // ---------- List / Delete ----------
 export const listMedia = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin
@@ -527,7 +541,10 @@ function asStringRecord(value: unknown): Record<string, string> {
   if (!isRecord(value)) return {};
   return Object.fromEntries(
     Object.entries(value)
-      .map(([key, raw]) => [key, typeof raw === "string" ? raw.trim() : String(raw ?? "").trim()] as const)
+      .map(
+        ([key, raw]) =>
+          [key, typeof raw === "string" ? raw.trim() : String(raw ?? "").trim()] as const,
+      )
       .filter(([, text]) => text.length > 0),
   );
 }
@@ -539,7 +556,9 @@ function asRegionMaskRecord(value: unknown): Record<string, [number, number]> {
       if (!Array.isArray(raw) || raw.length < 2) return [];
       const start = Number(raw[0]);
       const end = Number(raw[1]);
-      return Number.isFinite(start) && Number.isFinite(end) ? [[key, [start, end] as [number, number]]] : [];
+      return Number.isFinite(start) && Number.isFinite(end)
+        ? [[key, [start, end] as [number, number]]]
+        : [];
     }),
   );
 }
@@ -652,6 +671,7 @@ export type TribeActivationResult = {
   analysis_id?: string;
   viewer_url?: string;
   viewer_absolute_url?: string;
+  brain_visualization_html?: string;
   viewer_available?: boolean;
   viewer_error?: string;
   insight_summary?: string;
@@ -670,6 +690,10 @@ function getTribeApiBase() {
   }
   return raw.replace(/\/+$/, "");
 }
+
+const NGROK_SKIP_BROWSER_WARNING_HEADERS = {
+  "ngrok-skip-browser-warning": "true",
+} as const;
 
 function titleToCampaignName(item: AnalyzeMediaInput) {
   return item.title?.trim() || `${item.type} ${item.id.slice(0, 8)}`;
@@ -712,6 +736,22 @@ function withAbsoluteViewerUrl(result: TribeActivationResult, tribeBase: string)
   };
 }
 
+async function withViewerHtml(result: TribeActivationResult) {
+  if (result.brain_visualization_html || !result.viewer_absolute_url) return result;
+
+  try {
+    const res = await fetch(result.viewer_absolute_url, {
+      headers: NGROK_SKIP_BROWSER_WARNING_HEADERS,
+    });
+    if (!res.ok) return result;
+    const html = await res.text();
+    return { ...result, brain_visualization_html: html };
+  } catch (error) {
+    console.warn("Failed to preload TRIBE viewer HTML", error);
+    return result;
+  }
+}
+
 async function readTribeResponse(res: Response, tribeBase: string) {
   const text = await res.text();
   if (!res.ok) {
@@ -723,7 +763,7 @@ async function readTribeResponse(res: Response, tribeBase: string) {
     throw new Error("TRIBE API response is missing summary, scores, or peak_activation_step");
   }
 
-  return withAbsoluteViewerUrl(result, tribeBase);
+  return withViewerHtml(withAbsoluteViewerUrl(result, tribeBase));
 }
 
 function toJson(value: unknown): Json {
@@ -753,10 +793,12 @@ const SCORE_LABELS: Record<string, string> = {
 
 const RUBRIC_HINTS: Record<string, string> = {
   visual_cortex: "Predicted visual-processing signal from TRIBE's approximate vertex ranges.",
-  language_network: "Predicted language/message-processing signal from TRIBE's approximate vertex ranges.",
+  language_network:
+    "Predicted language/message-processing signal from TRIBE's approximate vertex ranges.",
   attention: "Predicted attention-adjacent cortical signal from TRIBE's response.",
   emotional_response: "Predicted reward/emotion-adjacent signal from the selected creative.",
-  memory_encoding: "Predicted memory-encoding-adjacent signal from the approximate demo region mask.",
+  memory_encoding:
+    "Predicted memory-encoding-adjacent signal from the approximate demo region mask.",
   overall_impact: "Average of available TRIBE region scores for a broad summary signal.",
 };
 
@@ -775,12 +817,13 @@ function extractJsonObject(text: string) {
 }
 
 function sanitizeInsightText(value: unknown, maxLength: number) {
-  return typeof value === "string"
-    ? value.replace(/\s+/g, " ").trim().slice(0, maxLength)
-    : "";
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, maxLength) : "";
 }
 
-function sanitizeLlmInsights(value: unknown, scoreKeys: string[]): Pick<TribeNarrativeInsights, "insight_summary" | "score_insights"> {
+function sanitizeLlmInsights(
+  value: unknown,
+  scoreKeys: string[],
+): Pick<TribeNarrativeInsights, "insight_summary" | "score_insights"> {
   const parsed = isRecord(value) ? value : {};
   const rawInsights = isRecord(parsed.score_insights) ? parsed.score_insights : {};
   const score_insights = Object.fromEntries(
@@ -804,8 +847,7 @@ function buildInsightPrompt(item: AnalyzeMediaInput, result: TribeActivationResu
   const scores = result.scores ?? result.summary.scores ?? {};
   const scoreKeys = Object.keys(scores);
   return JSON.stringify({
-    task:
-      "Interpret these TRIBE V2 predicted brain activation results for a founder or marketer. Use cautious, assistive language only.",
+    task: "Interpret these TRIBE V2 predicted brain activation results for a founder or marketer. Use cautious, assistive language only.",
     strict_style_rules: [
       "Do not claim real humans will behave a certain way.",
       "Do not say the campaign definitely attracts, converts, persuades, or improves performance.",
@@ -816,7 +858,9 @@ function buildInsightPrompt(item: AnalyzeMediaInput, result: TribeActivationResu
     ],
     output_schema: {
       summary: "One or two cautious sentences summarizing the overall pattern.",
-      score_insights: Object.fromEntries(scoreKeys.map((key) => [key, "One concise cautious insight for this rubric."])),
+      score_insights: Object.fromEntries(
+        scoreKeys.map((key) => [key, "One concise cautious insight for this rubric."]),
+      ),
     },
     media: {
       input_type: result.input_type,
@@ -900,7 +944,10 @@ async function generateTribeNarrativeInsights(
   }
 }
 
-async function enrichTribeResultWithInsights(item: AnalyzeMediaInput, result: TribeActivationResult) {
+async function enrichTribeResultWithInsights(
+  item: AnalyzeMediaInput,
+  result: TribeActivationResult,
+) {
   const insights = await generateTribeNarrativeInsights(item, result);
   return {
     ...result,
@@ -965,7 +1012,7 @@ export const analyzeMedia = createServerFn({ method: "POST" })
 
       const res = await fetch(`${tribeBase}/activate/text`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...NGROK_SKIP_BROWSER_WARNING_HEADERS },
         body: JSON.stringify({ text, campaign_name: campaignName }),
       });
       const result = await readTribeResponse(res, tribeBase);
@@ -988,6 +1035,7 @@ export const analyzeMedia = createServerFn({ method: "POST" })
 
     const res = await fetch(`${tribeBase}/activate/${data.type}`, {
       method: "POST",
+      headers: NGROK_SKIP_BROWSER_WARNING_HEADERS,
       body: form,
     });
     const result = await readTribeResponse(res, tribeBase);

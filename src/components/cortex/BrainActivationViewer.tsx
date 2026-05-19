@@ -44,6 +44,9 @@ const TRIBE_ASSET_BASE = "https://sibling-luminous-gothic.ngrok-free.dev/assets"
 const VERTEX_COUNT = 20484;
 const SEGMENT_DURATION = 0.4;
 const BG_DARKNESS = 0.3;
+const NGROK_SKIP_BROWSER_WARNING_HEADERS = {
+  "ngrok-skip-browser-warning": "true",
+} as const;
 
 const YEO_NAMES: Record<number, string> = {
   1: "Visual Cortex",
@@ -940,7 +943,9 @@ async function fetchAssetJson<T>(filename: string) {
 async function fetchWithFallback(filename: string) {
   const remote = `${TRIBE_ASSET_BASE}/${filename}`;
   try {
-    const response = await fetch(remote);
+    const response = await fetch(remote, {
+      headers: NGROK_SKIP_BROWSER_WARNING_HEADERS,
+    });
     if (response.ok) return response;
   } catch (error) {
     console.warn(`[Brain] Remote asset unavailable: ${remote}`, error);

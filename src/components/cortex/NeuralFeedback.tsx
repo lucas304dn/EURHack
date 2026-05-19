@@ -3,11 +3,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Info, Video } from "lucide-react";
+import {
+  AlertCircle,
+  ExternalLink,
+  Upload,
+  Sparkles,
+  Loader2,
+  Mic,
+  Info,
+  Video,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { analyzeMedia, listMedia, uploadMedia, type TribeActivationResult } from "@/lib/cortex.functions";
+import {
+  analyzeMedia,
+  listMedia,
+  uploadMedia,
+  type TribeActivationResult,
+} from "@/lib/cortex.functions";
 import brainImg from "@/assets/brain.png";
 import { cn } from "@/lib/utils";
 
@@ -107,9 +121,7 @@ function GalleryMediaPreview({ item }: { item: MediaItem }) {
 
   return (
     <div className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-lg bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.12),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4">
-      <p className="line-clamp-5 text-xs leading-relaxed text-foreground/80">
-        {textPreview(item)}
-      </p>
+      <p className="line-clamp-5 text-xs leading-relaxed text-foreground/80">{textPreview(item)}</p>
       <span className="mt-3 w-fit rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
         Text
       </span>
@@ -283,7 +295,9 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
       const isVideo = ["mp4", "mov"].includes(ext);
       const isAudio = ["mp3", "wav"].includes(ext);
       if (!isText && !isVideo && !isAudio) {
-        throw new Error("Only video (.mp4 .mov), audio (.mp3 .wav), and text (.txt) files are supported.");
+        throw new Error(
+          "Only video (.mp4 .mov), audio (.mp3 .wav), and text (.txt) files are supported.",
+        );
       }
       if (isText) {
         const text = await file.text();
@@ -384,273 +398,313 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
       return a.localeCompare(b);
     },
   );
-  const regionMaskEntries = Object.entries(analysis?.region_masks ?? analysis?.summary.region_masks ?? {});
+  const regionMaskEntries = Object.entries(
+    analysis?.region_masks ?? analysis?.summary.region_masks ?? {},
+  );
   const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
 
   return (
     <TooltipProvider delayDuration={150}>
-    <div className="space-y-6">
-      <motion.header
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-2 pb-1"
-      >
-        <p className="text-xs uppercase tracking-[0.28em] text-primary">
-          Neural Feedback
-        </p>
-        <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
-          Predict brain activation from your content
-        </h1>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Upload or select text, audio, or video to estimate cortical response patterns with TRIBE V2.
-        </p>
-      </motion.header>
+      <div className="space-y-6">
+        <motion.header
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-2 pb-1"
+        >
+          <p className="text-xs uppercase tracking-[0.28em] text-primary">Neural Feedback</p>
+          <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
+            Predict brain activation from your content
+          </h1>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            Upload or select text, audio, or video to estimate cortical response patterns with TRIBE
+            V2.
+          </p>
+        </motion.header>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-      {/* LEFT */}
-      <section className="glass-card neural-input-panel flex flex-col rounded-3xl p-7">
-        {!selected ? (
-          <>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Select Media for Neural Feedback
-            </h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* LEFT */}
+          <section className="glass-card neural-input-panel flex flex-col rounded-3xl p-7">
+            {!selected ? (
+              <>
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Select Media for Neural Feedback
+                </h2>
 
-            <div className="mt-5 flex gap-2">
-              <Button
-                variant={tab === "upload" ? "secondary" : "ghost"}
-                onClick={() => setTab("upload")}
-                className="rounded-xl"
-              >
-                Upload New
-              </Button>
-              <Button
-                variant={tab === "gallery" ? "secondary" : "ghost"}
-                onClick={() => setTab("gallery")}
-                className="rounded-xl"
-              >
-                Select from Gallery
-              </Button>
-            </div>
-
-            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-xs leading-relaxed text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
-              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
-                <Video className="h-3.5 w-3.5" />
-              </span>
-              <p>
-                Video analysis is most optimal for clips up to 10 seconds due to
-                compute requirements.
-              </p>
-            </div>
-
-            {tab === "upload" ? (
-              <div
-                {...getRootProps()}
-                className={cn(
-                  "mt-6 flex flex-1 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-12 text-center transition-colors",
-                  isDragActive
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40",
-                )}
-              >
-                <input {...getInputProps()} />
-                {upload.isPending ? (
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                ) : (
-                  <Upload className="h-10 w-10 text-muted-foreground" />
-                )}
-                <p className="mt-4 text-sm">
-                  {upload.isPending
-                    ? "Uploading…"
-                    : "Upload media or drag & drop"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  .mp4 .mov .mp3 .wav .txt
-                </p>
-              </div>
-            ) : (
-              <div className="mt-6 grid max-h-[420px] grid-cols-2 gap-3 overflow-y-auto pr-1">
-                {eligible.length === 0 && (
-                  <p className="col-span-2 py-12 text-center text-sm text-muted-foreground">
-                    No analyzable media in gallery. Meta TRIBE V2 supports text, audio, and video
-                    only.
-                  </p>
-                )}
-                {eligible.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setSelected(m as MediaItem)}
-                    className="glass-card rounded-xl p-3 text-left transition-all hover:border-primary/40"
+                <div className="mt-5 flex gap-2">
+                  <Button
+                    variant={tab === "upload" ? "secondary" : "ghost"}
+                    onClick={() => setTab("upload")}
+                    className="rounded-xl"
                   >
-                    <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-popover/50">
-                      <GalleryMediaPreview item={m as MediaItem} />
+                    Upload New
+                  </Button>
+                  <Button
+                    variant={tab === "gallery" ? "secondary" : "ghost"}
+                    onClick={() => setTab("gallery")}
+                    className="rounded-xl"
+                  >
+                    Select from Gallery
+                  </Button>
+                </div>
+
+                <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-xs leading-relaxed text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+                    <Video className="h-3.5 w-3.5" />
+                  </span>
+                  <p>
+                    Video analysis is most optimal for clips up to 10 seconds due to compute
+                    requirements.
+                  </p>
+                </div>
+
+                {tab === "upload" ? (
+                  <div
+                    {...getRootProps()}
+                    className={cn(
+                      "mt-6 flex flex-1 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-12 text-center transition-colors",
+                      isDragActive
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    {upload.isPending ? (
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    ) : (
+                      <Upload className="h-10 w-10 text-muted-foreground" />
+                    )}
+                    <p className="mt-4 text-sm">
+                      {upload.isPending ? "Uploading…" : "Upload media or drag & drop"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">.mp4 .mov .mp3 .wav .txt</p>
+                  </div>
+                ) : (
+                  <div className="mt-6 grid max-h-[420px] grid-cols-2 gap-3 overflow-y-auto pr-1">
+                    {eligible.length === 0 && (
+                      <p className="col-span-2 py-12 text-center text-sm text-muted-foreground">
+                        No analyzable media in gallery. Meta TRIBE V2 supports text, audio, and
+                        video only.
+                      </p>
+                    )}
+                    {eligible.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setSelected(m as MediaItem)}
+                        className="glass-card rounded-xl p-3 text-left transition-all hover:border-primary/40"
+                      >
+                        <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-popover/50">
+                          <GalleryMediaPreview item={m as MediaItem} />
+                        </div>
+                        <p className="line-clamp-1 text-xs font-medium">{m.title ?? "Untitled"}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          {m.type}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                      Selected · {selected.type}
+                    </p>
+                    <h2 className="mt-1 line-clamp-1 text-lg font-semibold">
+                      {selected.title ?? "Untitled"}
+                    </h2>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => setSelected(null)}
+                  >
+                    Change
+                  </Button>
+                </div>
+
+                <div>
+                  {selected.type === "text" && (
+                    <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-border bg-popover/40 p-6 text-sm leading-relaxed">
+                      {selected.content_text}
                     </div>
-                    <p className="line-clamp-1 text-xs font-medium">
-                      {m.title ?? "Untitled"}
+                  )}
+                  {selected.type === "video" && selected.content_url && (
+                    <video src={selected.content_url} controls className="w-full rounded-2xl" />
+                  )}
+                  {selected.type === "audio" && selected.content_url && (
+                    <div className="space-y-4">
+                      <div className="rounded-2xl border border-border bg-popover/40 p-6">
+                        <div className="mb-4 flex items-end justify-center gap-1">
+                          <AudioWaveform seed={selected.id} />
+                        </div>
+                        <audio src={selected.content_url} controls className="w-full" />
+                      </div>
+                      <TranscriptStream key={selected.id} text={selected.content_text ?? ""} />
+                    </div>
+                  )}
+                  {!selectedIsAnalyzable && (
+                    <div className="rounded-2xl border border-border bg-popover/40 p-6 text-sm text-muted-foreground">
+                      Meta TRIBE V2 supports text, audio, and video only. Images cannot be analyzed.
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={analyzing || !selectedIsAnalyzable}
+                  className="mt-4 w-full rounded-2xl py-6 text-base"
+                >
+                  {analyzing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  {analyzing ? "Analyzing neural response…" : "Analyze with Cortex AI"}
+                </Button>
+
+                {analyzed && (analysis.insight_summary || analysis.insight_error) && (
+                  <div className="mt-4 max-h-56 overflow-y-auto rounded-2xl border border-primary/15 bg-primary/[0.055] p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-primary/80">
+                      LLM Interpretation
                     </p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {m.type}
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+                      {analysis.insight_summary ??
+                        "Natural-language interpretation could not be generated for this run. The TRIBE scores and viewer are still available."}
                     </p>
-                  </button>
-                ))}
-              </div>
+                  </div>
+                )}
+
+                {analyzed && (
+                  <motion.div
+                    key="analysis"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 max-h-[620px] space-y-4 overflow-y-auto pr-1"
+                  >
+                    {scoreEntries.map(([key, rawScore], i) => {
+                      const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+                      const label = labelForScore(key);
+                      return (
+                        <motion.div
+                          key={key}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.15 }}
+                          className="rounded-2xl border border-border bg-popover/40 p-4"
+                        >
+                          <div className="mb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{label}</span>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                                    aria-label={`What ${label} means`}
+                                  >
+                                    <Info className="h-2.5 w-2.5" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="top"
+                                  className="max-w-64 rounded-xl border border-white/10 bg-popover px-3 py-2 text-xs leading-relaxed text-foreground shadow-2xl"
+                                >
+                                  {scoreInsight(key)}
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <span className="text-sm tabular-nums text-muted-foreground">
+                              {score.toFixed(1)}/100
+                            </span>
+                          </div>
+                          <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border/60">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${score}%` }}
+                              transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}
+                              className="h-full rounded-full bg-primary"
+                            />
+                          </div>
+                          <p className="rounded-xl border border-white/10 bg-background/25 p-3 text-xs leading-relaxed text-foreground/80">
+                            {narrativeInsightForScore(analysis, key)}
+                          </p>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </>
             )}
-          </>
-        ) : (
-          <>
-            <div className="mb-5 flex items-center justify-between">
+          </section>
+
+          {/* RIGHT */}
+          <section className="glass-card relative flex flex-col rounded-3xl p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Selected · {selected.type}
+                  TRIBE v2 Neural Response
                 </p>
-                <h2 className="mt-1 line-clamp-1 text-lg font-semibold">
-                  {selected.title ?? "Untitled"}
+                <h2 className="mt-1 text-xl font-semibold tracking-tight">
+                  Interactive brain activation
                 </h2>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-xl"
-                onClick={() => setSelected(null)}
-              >
-                Change
-              </Button>
+              {analysis?.viewer_absolute_url && (
+                <Button asChild variant="outline" size="sm" className="rounded-xl">
+                  <a href={analysis.viewer_absolute_url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                    Open
+                  </a>
+                </Button>
+              )}
             </div>
 
-            <div className="flex-1">
-              {selected.type === "text" && (
-                <div className="h-full overflow-y-auto rounded-2xl border border-border bg-popover/40 p-6 text-sm leading-relaxed">
-                  {selected.content_text}
-                </div>
+            <div
+              id="brain-visualization-container"
+              className={cn(
+                "relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-popover/30",
+                viewerUrl && "min-h-[620px]",
               )}
-              {selected.type === "video" && selected.content_url && (
-                <video
-                  src={selected.content_url}
-                  controls
-                  className="w-full rounded-2xl"
+            >
+              {analysis?.brain_visualization_html ? (
+                <iframe
+                  title="TRIBE v2 interactive cortical activation viewer"
+                  srcDoc={analysis.brain_visualization_html}
+                  className="h-[620px] w-full bg-black"
+                  sandbox="allow-scripts allow-same-origin"
+                  referrerPolicy="no-referrer"
                 />
-              )}
-              {selected.type === "audio" && selected.content_url && (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-border bg-popover/40 p-6">
-                    <div className="mb-4 flex items-end justify-center gap-1">
-                      <AudioWaveform seed={selected.id} />
-                    </div>
-                    <audio src={selected.content_url} controls className="w-full" />
-                  </div>
-                  <TranscriptStream
-                    key={selected.id}
-                    text={selected.content_text ?? ""}
-                  />
-                </div>
-              )}
-              {!selectedIsAnalyzable && (
-                <div className="rounded-2xl border border-border bg-popover/40 p-6 text-sm text-muted-foreground">
-                  Meta TRIBE V2 supports text, audio, and video only. Images cannot be analyzed.
-                </div>
-              )}
-            </div>
-
-            <Button
-              onClick={handleAnalyze}
-              disabled={analyzing || !selectedIsAnalyzable}
-              className="mt-6 w-full rounded-2xl py-6 text-base"
-            >
-              {analyzing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              {analyzing ? "Analyzing neural response…" : "Analyze with Cortex AI"}
-            </Button>
-          </>
-        )}
-      </section>
-
-      {/* RIGHT */}
-      <section className="glass-card relative flex flex-col rounded-3xl p-7">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              TRIBE v2 Neural Response
-            </p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight">
-              Interactive brain activation
-            </h2>
-          </div>
-          {analysis?.viewer_absolute_url && (
-            <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <a href={analysis.viewer_absolute_url} target="_blank" rel="noreferrer">
-                <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                Open
-              </a>
-            </Button>
-          )}
-        </div>
-
-        <div
-          id="brain-visualization-container"
-          className={cn(
-            "relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-popover/30",
-            viewerUrl && "min-h-[620px]",
-          )}
-        >
-          {viewerUrl ? (
-            <iframe
-              title="TRIBE v2 interactive cortical activation viewer"
-              src={viewerUrl}
-              className="h-[620px] w-full bg-black"
-              sandbox="allow-scripts allow-same-origin"
-              referrerPolicy="no-referrer"
-            />
-          ) : analyzed ? (
-            <div className="max-w-md p-8 text-center">
-              <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
-              <p className="mt-4 text-sm font-medium">Brain viewer unavailable</p>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {analysis?.viewer_error ??
-                  "TRIBE returned scores, but the notebook did not provide an HTML viewer for this analysis."}
-              </p>
-            </div>
-          ) : (
-            <BrainPlaceholder3D analyzing={analyzing} />
-          )}
-        </div>
-
-        <AnimatePresence mode="wait">
-          {!analyzed ? (
-            <motion.div
-              key="caption"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="mt-6 space-y-3 text-center"
-            >
-              <p className="text-sm text-muted-foreground">
-                {analyzing
-                  ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
-                  : "Select media to begin neural analysis"}
-              </p>
-              {analyzing && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-2"
-                >
-                  <p className="mx-auto w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
-                    Please be patient, TRIBE V2 may take 5-10 minutes.
+              ) : viewerUrl ? (
+                <iframe
+                  title="TRIBE v2 interactive cortical activation viewer"
+                  src={viewerUrl}
+                  className="h-[620px] w-full bg-black"
+                  sandbox="allow-scripts allow-same-origin"
+                  referrerPolicy="no-referrer"
+                />
+              ) : analyzed ? (
+                <div className="max-w-md p-8 text-center">
+                  <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+                  <p className="mt-4 text-sm font-medium">Brain viewer unavailable</p>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {analysis?.viewer_error ??
+                      "TRIBE returned scores, but the notebook did not provide an HTML viewer for this analysis."}
                   </p>
-                  <AnalysisProgressTicker />
-                </motion.div>
+                </div>
+              ) : (
+                <BrainPlaceholder3D analyzing={analyzing} />
               )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="analysis"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 flex flex-1 flex-col gap-4"
-            >
-              <div className="grid gap-3 rounded-2xl border border-border bg-popover/40 p-4 text-sm md:grid-cols-2">
+            </div>
+
+            {analyzed && (
+              <motion.div
+                key="analysis-summary"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 grid gap-3 rounded-2xl border border-border bg-popover/40 p-4 text-sm md:grid-cols-2"
+              >
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                     Input
@@ -687,103 +741,71 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                       .join(" · ") || "No metadata returned"}
                   </p>
                 </div>
-              </div>
+              </motion.div>
+            )}
 
-              {(analysis.insight_summary || analysis.insight_error) && (
-                <div className="rounded-2xl border border-primary/15 bg-primary/[0.055] p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-primary/80">
-                    LLM Interpretation
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-foreground/85">
-                    {analysis.insight_summary ??
-                      "Natural-language interpretation could not be generated for this run. The TRIBE scores and viewer are still available."}
-                  </p>
-                </div>
-              )}
-
-              {scoreEntries.map(([key, rawScore], i) => {
-                const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
-                const label = labelForScore(key);
-                return (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.15 }}
-                  className="rounded-2xl border border-border bg-popover/40 p-4"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{label}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                            aria-label={`What ${label} means`}
-                          >
-                            <Info className="h-2.5 w-2.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="top"
-                          className="max-w-64 rounded-xl border border-white/10 bg-popover px-3 py-2 text-xs leading-relaxed text-foreground shadow-2xl"
-                        >
-                          {scoreInsight(key)}
-                        </TooltipContent>
-                      </Tooltip>
+            {analyzed && regionMaskEntries.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-border bg-popover/40 p-4">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Region Masks
+                </p>
+                <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                  {regionMaskEntries.map(([key, range]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between gap-3 rounded-xl bg-background/30 px-3 py-2"
+                    >
+                      <span>{labelForScore(key)}</span>
+                      <span className="tabular-nums">
+                        {range?.[0]}-{range?.[1]}
+                      </span>
                     </div>
-                    <span className="text-sm tabular-nums text-muted-foreground">
-                      {score.toFixed(1)}/100
-                    </span>
-                  </div>
-                  <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border/60">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${score}%` }}
-                      transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}
-                      className="h-full rounded-full bg-primary"
-                    />
-                  </div>
-                  <p className="rounded-xl border border-white/10 bg-background/25 p-3 text-xs leading-relaxed text-foreground/80">
-                    {narrativeInsightForScore(analysis, key)}
-                  </p>
-                </motion.div>
-                );
-              })}
-
-              {regionMaskEntries.length > 0 && (
-                <div className="rounded-2xl border border-border bg-popover/40 p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Region Masks
-                  </p>
-                  <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                    {regionMaskEntries.map(([key, range]) => (
-                      <div key={key} className="flex justify-between gap-3 rounded-xl bg-background/30 px-3 py-2">
-                        <span>{labelForScore(key)}</span>
-                        <span className="tabular-nums">
-                          {range?.[0]}-{range?.[1]}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  ))}
                 </div>
+              </div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {!analyzed && (
+                <motion.div
+                  key="caption"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-6 space-y-3 text-center"
+                >
+                  <p className="text-sm text-muted-foreground">
+                    {analyzing
+                      ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
+                      : "Select media to begin neural analysis"}
+                  </p>
+                  {analyzing && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-2"
+                    >
+                      <p className="mx-auto w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                        Please be patient, TRIBE V2 may take 5-10 minutes.
+                      </p>
+                      <AnalysisProgressTicker />
+                    </motion.div>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
+            </AnimatePresence>
+          </section>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex justify-center"
+        >
+          <p className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_34px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+            Powered by <span className="text-foreground/80">Meta TRIBE V2</span>.
+          </p>
+        </motion.div>
       </div>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-center"
-      >
-        <p className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_34px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-          Powered by <span className="text-foreground/80">Meta TRIBE V2</span>.
-        </p>
-      </motion.div>
-    </div>
     </TooltipProvider>
   );
 }
@@ -817,9 +839,7 @@ function TranscriptStream({ text }: { text: string }) {
 
   return (
     <div className="rounded-2xl border border-border bg-popover/40 p-5">
-      <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-        Transcript
-      </p>
+      <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Transcript</p>
       <p className="whitespace-pre-wrap text-sm leading-relaxed">
         {shown}
         {shown.length < text.length && (
