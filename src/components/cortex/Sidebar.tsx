@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutGrid, Brain, Plug } from "lucide-react";
 import { cn } from "@/lib/utils";
-import cortexLogo from "@/assets/cortex-logo.png";
+import cortexLogo from "@/assets/cortex-logo-mark.svg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const items = [
@@ -19,7 +19,7 @@ export function CortexSidebar() {
         <img
           src={cortexLogo}
           alt="Cortex"
-          className="h-8 w-8 object-contain"
+          className="h-10 w-10 object-contain"
         />
       </Link>
 
