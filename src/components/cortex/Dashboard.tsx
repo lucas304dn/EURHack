@@ -488,14 +488,23 @@ function MediaCard({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="secondary" className="flex-1 rounded-xl">
-              <Link
-                to="/neural-feedback"
-                search={{ mediaId: item.id }}
+            {item.type === "image" ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled
+                title="Meta TRIBE V2 does not accept image input"
+                className="flex-1 rounded-xl"
               >
                 <Brain className="mr-1.5 h-3.5 w-3.5" /> Neural Feedback
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="secondary" className="flex-1 rounded-xl">
+                <Link to="/neural-feedback" search={{ mediaId: item.id }}>
+                  <Brain className="mr-1.5 h-3.5 w-3.5" /> Neural Feedback
+                </Link>
+              </Button>
+            )}
             <Button
               size="icon"
               variant="ghost"

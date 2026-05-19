@@ -3,16 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Upload,
-  Sparkles,
-  Loader2,
-  
-  Mic,
-  Type as TypeIcon,
-  Image as ImageIcon,
-  Send,
-} from "lucide-react";
+import { Upload, Sparkles, Loader2, Mic, Type as TypeIcon, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { listMedia, uploadMedia } from "@/lib/cortex.functions";
@@ -52,6 +43,8 @@ const RUBRICS = [
   },
 ] as const;
 
+const ANALYZABLE_MEDIA_TYPES = new Set(["text", "video", "audio"]);
+
 export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) {
   const qc = useQueryClient();
   const fnList = useServerFn(listMedia);
@@ -61,6 +54,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
   const [tab, setTab] = useState<"upload" | "gallery">("upload");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
+  const selectedIsAnalyzable = selected ? ANALYZABLE_MEDIA_TYPES.has(selected.type) : false;
 
   const mediaQ = useQuery({
     queryKey: ["media"],
@@ -68,16 +62,16 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
   });
 
   const eligible = useMemo(
-    () => mediaQ.data?.items ?? [],
+    () => (mediaQ.data?.items ?? []).filter((item) => ANALYZABLE_MEDIA_TYPES.has(item.type)),
     [mediaQ.data],
   );
 
   useEffect(() => {
     if (initialMediaId && !selected && mediaQ.data) {
-      const found = mediaQ.data.items.find((m) => m.id === initialMediaId);
+      const found = eligible.find((m) => m.id === initialMediaId);
       if (found) setSelected(found as MediaItem);
     }
-  }, [initialMediaId, mediaQ.data, selected]);
+  }, [eligible, initialMediaId, mediaQ.data, selected]);
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
@@ -136,6 +130,10 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
 
   const handleAnalyze = () => {
     if (!selected) return;
+    if (!selectedIsAnalyzable) {
+      toast.error("Meta TRIBE V2 supports text, audio, and video only.");
+      return;
+    }
     setAnalyzing(true);
     setAnalyzed(false);
     setTimeout(() => {
@@ -206,7 +204,8 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
               <div className="mt-6 grid max-h-[420px] grid-cols-2 gap-3 overflow-y-auto pr-1">
                 {eligible.length === 0 && (
                   <p className="col-span-2 py-12 text-center text-sm text-muted-foreground">
-                    No analyzable media in gallery.
+                    No analyzable media in gallery. Meta TRIBE V2 supports text, audio, and video
+                    only.
                   </p>
                 )}
                 {eligible.map((m) => (
@@ -216,19 +215,10 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                     className="glass-card rounded-xl p-3 text-left transition-all hover:border-primary/40"
                   >
                     <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-popover/50">
-                      {m.type === "image" && m.content_url ? (
-                        <img
-                          src={m.content_url}
-                          alt={m.title ?? ""}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : m.type === "video" && m.content_url ? (
+                      {m.type === "video" && m.content_url ? (
                         <video src={m.content_url} className="h-full w-full object-cover" muted />
                       ) : m.type === "audio" ? (
                         <Mic className="h-6 w-6 text-muted-foreground" />
-                      ) : m.type === "image" ? (
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
                       ) : (
                         <TypeIcon className="h-6 w-6 text-muted-foreground" />
                       )}
@@ -271,13 +261,6 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   {selected.content_text}
                 </div>
               )}
-              {selected.type === "image" && selected.content_url && (
-                <img
-                  src={selected.content_url}
-                  alt={selected.title ?? ""}
-                  className="w-full rounded-2xl object-contain"
-                />
-              )}
               {selected.type === "video" && selected.content_url && (
                 <video
                   src={selected.content_url}
@@ -307,11 +290,16 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   />
                 </div>
               )}
+              {!selectedIsAnalyzable && (
+                <div className="rounded-2xl border border-border bg-popover/40 p-6 text-sm text-muted-foreground">
+                  Meta TRIBE V2 supports text, audio, and video only. Images cannot be analyzed.
+                </div>
+              )}
             </div>
 
             <Button
               onClick={handleAnalyze}
-              disabled={analyzing}
+              disabled={analyzing || !selectedIsAnalyzable}
               className="mt-6 w-full rounded-2xl py-6 text-base"
             >
               {analyzing ? (
