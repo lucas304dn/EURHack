@@ -16,6 +16,7 @@ const GenMediaInput = z.object({
 });
 
 const OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+const DEFAULT_POLLINATIONS_VIDEO_MODELS = ["ltx-2", "wan-fast", "wan"];
 
 // ---------- TEXT (OpenRouter) — returns variants WITHOUT persisting ----------
 export const generateText = createServerFn({ method: "POST" })
@@ -90,26 +91,6 @@ export const saveTextVariant = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-async function callVideoBackend(prompt: string, imageUrls?: string[]): Promise<string> {
-  const backendUrl = process.env.VIDEO_GENERATION_BACKEND_URL;
-  if (!backendUrl) throw new Error("VIDEO_GENERATION_BACKEND_URL is not configured");
-
-  const body: Record<string, unknown> = { prompt };
-  if (imageUrls && imageUrls.length > 0) body.image_urls = imageUrls;
-  const res = await fetch(`${backendUrl.replace(/\/+$/, "")}/generate/video`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`video generation failed: ${res.status} ${t.slice(0, 200)}`);
-  }
-  const json = (await res.json()) as { url?: string };
-  if (!json.url) throw new Error(`video generation returned no url`);
-  return json.url;
-}
 
 type GeminiImagePart = {
   text?: string;
@@ -189,6 +170,155 @@ function getGeminiImage(response: GeminiGenerateResponse) {
   return null;
 }
 
+function videoPromptForProvider(prompt: string) {
+  return [
+    prompt.trim().slice(0, 900),
+    "Short polished marketing video, coherent motion, professional lighting, no captions, no visible text overlays.",
+  ].join(". ");
+}
+
+async function providerError(res: Response, provider: string) {
+  const contentType = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+  if (contentType.includes("text/html")) {
+    return `${provider} ${res.status}: provider returned an HTML page instead of an API response. Check the API key and endpoint configuration.`;
+  }
+
+  try {
+    const json = JSON.parse(text) as { error?: unknown; message?: unknown; detail?: unknown };
+    const message = extractProviderMessage(json.error ?? json.message ?? json.detail);
+    if (message) return `${provider} ${res.status}: ${typeof message === "string" ? message : JSON.stringify(message)}`;
+  } catch {
+    // Fall through to the raw text excerpt.
+  }
+
+  return `${provider} ${res.status}: ${text.slice(0, 240)}`;
+}
+
+function extractProviderMessage(value: unknown): string {
+  if (!value) return "";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        return extractProviderMessage(JSON.parse(trimmed));
+      } catch {
+        return trimmed.replace(/\s+/g, " ").slice(0, 320);
+      }
+    }
+    return trimmed.replace(/\s+/g, " ").slice(0, 320);
+  }
+  if (Array.isArray(value)) {
+    return value.map(extractProviderMessage).filter(Boolean).join("; ").slice(0, 320);
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return extractProviderMessage(
+      record.message ??
+        record.error ??
+        record.detail ??
+        record.upstreamBody ??
+        record.cause,
+    );
+  }
+  return String(value).slice(0, 320);
+}
+
+class PollinationsVideoError extends Error {
+  constructor(
+    message: string,
+    readonly model: string,
+    readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = "PollinationsVideoError";
+  }
+}
+
+function pollinationsVideoModels() {
+  const configured = (process.env.POLLINATIONS_VIDEO_MODEL ?? "")
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set([...configured, ...DEFAULT_POLLINATIONS_VIDEO_MODELS]));
+}
+
+function isRetryableVideoModelError(message: string) {
+  return /InvalidEndpointOrModel|does not exist|do not have access|Not Found|BAD_GATEWAY|UpstreamError|upstream/i.test(
+    message,
+  );
+}
+
+async function requestPollinationsVideo(prompt: string, key: string, model: string): Promise<Uint8Array> {
+  const url = new URL(`https://gen.pollinations.ai/video/${encodeURIComponent(videoPromptForProvider(prompt))}`);
+  url.searchParams.set("model", model);
+  url.searchParams.set("duration", "4");
+  url.searchParams.set("aspectRatio", "16:9");
+  url.searchParams.set("audio", "false");
+  url.searchParams.set("safe", "true");
+  url.searchParams.set("seed", String(Math.floor(Math.random() * 1_000_000_000)));
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      Accept: "video/mp4,application/octet-stream,application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const message = await providerError(res, `Pollinations video generation (${model})`);
+    throw new PollinationsVideoError(message, model, res.status >= 500 || isRetryableVideoModelError(message));
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const json = (await res.json()) as { url?: string; error?: unknown; message?: unknown };
+    if (json.url) {
+      const videoRes = await fetch(json.url);
+      if (!videoRes.ok) {
+        throw new Error(await providerError(videoRes, "Pollinations video download"));
+      }
+      return new Uint8Array(await videoRes.arrayBuffer());
+    }
+    const message = `Pollinations video generation (${model}) returned JSON without a video URL: ${extractProviderMessage(json.error ?? json.message ?? json)}`;
+    throw new PollinationsVideoError(message, model, isRetryableVideoModelError(message));
+  }
+
+  if (contentType.includes("text/html") || contentType.includes("text/plain")) {
+    throw new PollinationsVideoError(
+      `Pollinations video generation (${model}) returned ${contentType || "text"} instead of MP4. Check POLLINATIONS_API_KEY and POLLINATIONS_VIDEO_MODEL.`,
+      model,
+      false,
+    );
+  }
+
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function generatePollinationsVideo(prompt: string): Promise<Uint8Array> {
+  const key = process.env.POLLINATIONS_API_KEY;
+  if (!key) {
+    throw new Error("POLLINATIONS_API_KEY is not configured for video generation");
+  }
+
+  const errors: string[] = [];
+  const models = pollinationsVideoModels();
+  for (const model of models) {
+    try {
+      return await requestPollinationsVideo(prompt, key, model);
+    } catch (error) {
+      if (!(error instanceof PollinationsVideoError)) throw error;
+      errors.push(error.message);
+      if (!error.retryable) throw error;
+    }
+  }
+
+  throw new Error(`Pollinations video generation failed for ${models.join(", ")}. ${errors.join(" | ")}`);
+}
+
 // ---------- IMAGE (Gemini API / Nano Banana) ----------
 export const generateImage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => GenMediaInput.parse(input))
@@ -256,15 +386,22 @@ export const generateImage = createServerFn({ method: "POST" })
 export const generateVideo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => GenMediaInput.parse(input))
   .handler(async ({ data }) => {
-    const url = await callVideoBackend(data.prompt, data.imageUrls);
+    const bytes = await generatePollinationsVideo(data.prompt);
+    const path = `video/${crypto.randomUUID()}.mp4`;
+    const up = await supabaseAdmin.storage
+      .from("media")
+      .upload(path, bytes, { contentType: "video/mp4" });
+    if (up.error) throw new Error(up.error.message);
+    const { data: pub } = supabaseAdmin.storage.from("media").getPublicUrl(path);
+
     const { error } = await supabaseAdmin.from("media_items").insert({
       user_id: "demo-user",
       type: "video",
       title: data.prompt.slice(0, 80),
-      content_url: url,
+      content_url: pub.publicUrl,
     });
     if (error) throw new Error(error.message);
-    return { url };
+    return { url: pub.publicUrl };
   });
 
 
