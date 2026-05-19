@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { Upload, Sparkles, Loader2, Mic, Type as TypeIcon, Send } from "lucide-react";
+import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { listMedia, uploadMedia } from "@/lib/cortex.functions";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { analyzeMedia, listMedia, uploadMedia, type TribeActivationResult } from "@/lib/cortex.functions";
 import brainImg from "@/assets/brain.png";
 import { cn } from "@/lib/utils";
 
@@ -19,41 +20,243 @@ type MediaItem = {
   created_at: string;
 };
 
-const RUBRICS = [
-  {
-    key: "attention",
-    label: "Attention",
-    score: 74,
-    insight:
-      "High parietal activation suggests this ad is likely to capture and hold viewer attention effectively.",
-  },
-  {
-    key: "focus",
-    label: "Focus",
-    score: 61,
-    insight:
-      "Prefrontal engagement indicates strong cognitive processing and sustained focus on the message.",
-  },
-  {
-    key: "virality",
-    label: "Virality",
-    score: 83,
-    insight:
-      "Elevated reward network activity suggests strong social sharing potential and emotional resonance.",
-  },
-] as const;
-
 const ANALYZABLE_MEDIA_TYPES = new Set(["text", "video", "audio"]);
+
+const SCORE_LABELS: Record<string, string> = {
+  visual_cortex: "Visual Cortex",
+  language_network: "Language Network",
+  attention: "Attention",
+  emotional_response: "Emotional Response",
+  memory_encoding: "Memory Encoding",
+  overall_impact: "Overall Impact",
+};
+
+const SCORE_INSIGHTS: Record<string, string> = {
+  visual_cortex: "Visual processing signal from the peak predicted cortical response.",
+  language_network: "Language-related activation estimate from the TRIBE vertex ranges.",
+  attention: "Attention-region activation estimate from the TRIBE response.",
+  emotional_response: "Reward/emotion-adjacent activation estimate for the selected creative.",
+  memory_encoding: "Memory-encoding signal from the approximate demo region mask.",
+  overall_impact: "Average of the available TRIBE region scores.",
+};
+
+function labelForScore(key: string) {
+  return SCORE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function scoreInsight(key: string) {
+  return SCORE_INSIGHTS[key] ?? "TRIBE-derived activation score for this approximate vertex range.";
+}
+
+function narrativeInsightForScore(analysis: TribeActivationResult | null, key: string) {
+  const insight = analysis?.score_insights?.[key]?.trim();
+  if (insight) return insight;
+  if (analysis?.insight_error) {
+    return "Natural-language interpretation is unavailable for this run, but the score still reflects the saved TRIBE output.";
+  }
+  return "Natural-language interpretation will appear here after the LLM reviews the saved TRIBE result.";
+}
+
+function textPreview(item: MediaItem) {
+  return item.content_text?.trim() || item.title?.trim() || "Text preview unavailable.";
+}
+
+function waveformHeight(index: number, seed: string) {
+  const seedValue = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const wave = Math.abs(Math.sin((index + seedValue) * 0.46) * Math.cos((index + 3) * 0.28));
+  return 18 + wave * 70;
+}
+
+function AudioWaveform({ seed, compact = false }: { seed: string; compact?: boolean }) {
+  const bars = compact ? 34 : 56;
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-1">
+      {Array.from({ length: bars }).map((_, i) => {
+        const height = waveformHeight(i, seed);
+        return (
+          <span
+            key={i}
+            className={cn(
+              "rounded-full bg-primary/60 shadow-[0_0_14px_rgba(255,255,255,0.04)]",
+              compact ? "w-0.5" : "w-1",
+            )}
+            style={{
+              height: compact ? `${height}%` : `${10 + height * 0.8}px`,
+              opacity: 0.45 + (height / 100) * 0.45,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function GalleryMediaPreview({ item }: { item: MediaItem }) {
+  if (item.type === "video" && item.content_url) {
+    return <video src={item.content_url} className="h-full w-full object-cover" muted />;
+  }
+
+  if (item.type === "audio") {
+    return (
+      <div className="relative h-full w-full overflow-hidden rounded-lg bg-[radial-gradient(circle_at_50%_15%,rgba(255,255,255,0.10),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))] px-4 py-5">
+        <AudioWaveform seed={item.id} compact />
+        <Mic className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/70" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-lg bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.12),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4">
+      <p className="line-clamp-5 text-xs leading-relaxed text-foreground/80">
+        {textPreview(item)}
+      </p>
+      <span className="mt-3 w-fit rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        Text
+      </span>
+    </div>
+  );
+}
+
+const BRAIN_VOLUME_SLICES = Array.from({ length: 19 }, (_, i) => i - 9);
+const ANALYSIS_PROGRESS_STEPS = [
+  "Converting text via TTS...",
+  "Analyzing potential audio response...",
+  "Analyzing potential video response...",
+  "Extracting multimodal event timing...",
+  "Projecting activation onto cortex...",
+];
+
+function BrainPlaceholder3D({ analyzing }: { analyzing: boolean }) {
+  return (
+    <div
+      role="img"
+      aria-label="Rotating 3D brain placeholder"
+      className="relative h-72 w-80 [perspective:920px]"
+    >
+      <motion.div
+        className="absolute inset-0 [transform-style:preserve-3d]"
+        initial={{ rotateX: -8, rotateY: -28 }}
+        animate={{
+          rotateX: [-8, 7, -8],
+          rotateY: 332,
+        }}
+        transition={{
+          rotateX: {
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          },
+          rotateY: {
+            duration: 22,
+            repeat: Infinity,
+            ease: "linear",
+          },
+        }}
+      >
+        <div
+          className="absolute inset-x-12 bottom-4 h-12 rounded-full bg-black/35 blur-xl"
+          style={{ transform: "translateZ(-54px) rotateX(82deg)" }}
+        />
+
+        {BRAIN_VOLUME_SLICES.map((slice) => {
+          const depth = slice * 4.2;
+          const distanceFromCenter = Math.abs(slice) / 9;
+          const scale = 1 - distanceFromCenter * 0.08;
+          const opacity = 0.055 + (1 - distanceFromCenter) * 0.06;
+
+          return (
+            <img
+              key={slice}
+              src={brainImg}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="brain-volume-slice absolute inset-0 h-full w-full select-none object-contain"
+              style={{
+                opacity,
+                transform: `translateZ(${depth}px) scale(${scale})`,
+              }}
+            />
+          );
+        })}
+
+        <img
+          src={brainImg}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="brain-volume-slice absolute inset-0 h-full w-full select-none object-contain"
+          style={{
+            opacity: analyzing ? 0.5 : 0.42,
+            transform: "translateZ(46px) scale(0.98)",
+          }}
+        />
+      </motion.div>
+
+      <motion.div
+        aria-hidden="true"
+        className="absolute inset-4 rounded-full border border-white/10"
+        initial={{ rotateX: 72, rotate: 0 }}
+        animate={{ rotateX: 72, rotate: 360 }}
+        transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute inset-8 rounded-full border border-primary/20"
+        initial={{ rotateY: 68, rotate: 0 }}
+        animate={{ rotateY: 68, rotate: -360 }}
+        transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
+function AnalysisProgressTicker() {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [visibleText, setVisibleText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const fullText = ANALYSIS_PROGRESS_STEPS[stepIndex];
+    const atFullText = visibleText === fullText;
+    const atEmptyText = visibleText.length === 0;
+    const delay = atFullText && !deleting ? 1100 : deleting ? 28 : 45;
+
+    const id = window.setTimeout(() => {
+      if (!deleting && atFullText) {
+        setDeleting(true);
+        return;
+      }
+
+      if (deleting && atEmptyText) {
+        setDeleting(false);
+        setStepIndex((current) => (current + 1) % ANALYSIS_PROGRESS_STEPS.length);
+        return;
+      }
+
+      setVisibleText(fullText.slice(0, visibleText.length + (deleting ? -1 : 1)));
+    }, delay);
+
+    return () => window.clearTimeout(id);
+  }, [deleting, stepIndex, visibleText]);
+
+  return (
+    <p className="mx-auto flex min-h-5 w-fit items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.055] px-3 py-1 text-[11px] font-medium text-foreground/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+      <span>{visibleText}</span>
+      <span className="h-3.5 w-px animate-pulse bg-primary/70" aria-hidden="true" />
+    </p>
+  );
+}
 
 export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) {
   const qc = useQueryClient();
   const fnList = useServerFn(listMedia);
   const fnUpload = useServerFn(uploadMedia);
+  const fnAnalyze = useServerFn(analyzeMedia);
 
   const [selected, setSelected] = useState<MediaItem | null>(null);
   const [tab, setTab] = useState<"upload" | "gallery">("upload");
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
+  const [analysis, setAnalysis] = useState<TribeActivationResult | null>(null);
   const selectedIsAnalyzable = selected ? ANALYZABLE_MEDIA_TYPES.has(selected.type) : false;
 
   const mediaQ = useQuery({
@@ -116,6 +319,35 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const analyze = useMutation({
+    mutationFn: async (item: MediaItem) => {
+      if (!ANALYZABLE_MEDIA_TYPES.has(item.type)) {
+        throw new Error("Meta TRIBE V2 supports text, audio, and video only.");
+      }
+      return fnAnalyze({
+        data: {
+          id: item.id,
+          type: item.type as "text" | "video" | "audio",
+          title: item.title,
+          content_url: item.content_url,
+          content_text: item.content_text,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      setAnalysis(result as TribeActivationResult);
+      if ((result as TribeActivationResult).persistence_error) {
+        toast.warning("TRIBE analysis complete, but saving the run failed.");
+      } else {
+        toast.success("TRIBE analysis complete");
+      }
+    },
+    onError: (e: Error) => {
+      setAnalysis(null);
+      toast.error(e.message);
+    },
+  });
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: {
@@ -134,24 +366,49 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
       toast.error("Meta TRIBE V2 supports text, audio, and video only.");
       return;
     }
-    setAnalyzing(true);
-    setAnalyzed(false);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setAnalyzed(true);
-    }, 3000);
+    setAnalysis(null);
+    analyze.mutate(selected);
   };
 
   // Reset analysis when changing selection
   useEffect(() => {
-    setAnalyzed(false);
-    setAnalyzing(false);
+    setAnalysis(null);
   }, [selected?.id]);
 
+  const analyzing = analyze.isPending;
+  const analyzed = !!analysis;
+  const scoreEntries = Object.entries(analysis?.scores ?? analysis?.summary.scores ?? {}).sort(
+    ([a], [b]) => {
+      if (a === "overall_impact") return 1;
+      if (b === "overall_impact") return -1;
+      return a.localeCompare(b);
+    },
+  );
+  const regionMaskEntries = Object.entries(analysis?.region_masks ?? analysis?.summary.region_masks ?? {});
+  const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <TooltipProvider delayDuration={150}>
+    <div className="space-y-6">
+      <motion.header
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-2 pb-1"
+      >
+        <p className="text-xs uppercase tracking-[0.28em] text-primary">
+          Neural Feedback
+        </p>
+        <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
+          Predict brain activation from your content
+        </h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          Upload or select text, audio, or video to estimate cortical response patterns with TRIBE V2.
+        </p>
+      </motion.header>
+
+      <div className="grid gap-6 lg:grid-cols-2">
       {/* LEFT */}
-      <section className="glass-card flex flex-col rounded-3xl p-7">
+      <section className="glass-card neural-input-panel flex flex-col rounded-3xl p-7">
         {!selected ? (
           <>
             <h2 className="text-xl font-semibold tracking-tight">
@@ -215,13 +472,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                     className="glass-card rounded-xl p-3 text-left transition-all hover:border-primary/40"
                   >
                     <div className="mb-2 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-popover/50">
-                      {m.type === "video" && m.content_url ? (
-                        <video src={m.content_url} className="h-full w-full object-cover" muted />
-                      ) : m.type === "audio" ? (
-                        <Mic className="h-6 w-6 text-muted-foreground" />
-                      ) : (
-                        <TypeIcon className="h-6 w-6 text-muted-foreground" />
-                      )}
+                      <GalleryMediaPreview item={m as MediaItem} />
                     </div>
                     <p className="line-clamp-1 text-xs font-medium">
                       {m.title ?? "Untitled"}
@@ -272,15 +523,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-border bg-popover/40 p-6">
                     <div className="mb-4 flex items-end justify-center gap-1">
-                      {Array.from({ length: 56 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="w-1 rounded-full bg-primary/60"
-                          style={{
-                            height: `${10 + Math.abs(Math.sin(i * 0.4)) * 60}px`,
-                          }}
-                        />
-                      ))}
+                      <AudioWaveform seed={selected.id} />
                     </div>
                     <audio src={selected.content_url} controls className="w-full" />
                   </div>
@@ -315,103 +558,223 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
 
       {/* RIGHT */}
       <section className="glass-card relative flex flex-col rounded-3xl p-7">
-        {/* Reserved integration container — do not populate */}
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              TRIBE v2 Neural Response
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Interactive brain activation
+            </h2>
+          </div>
+          {analysis?.viewer_absolute_url && (
+            <Button asChild variant="outline" size="sm" className="rounded-xl">
+              <a href={analysis.viewer_absolute_url} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                Open
+              </a>
+            </Button>
+          )}
+        </div>
+
         <div
           id="brain-visualization-container"
-          style={{ border: "1px dashed #333" }}
-          className="pointer-events-none absolute inset-7 rounded-2xl opacity-0"
-          aria-hidden
-        />
-
-        <motion.div
-          layout
           className={cn(
-            "relative mx-auto flex items-center justify-center transition-all",
-            analyzed ? "h-44" : "h-72 flex-1",
+            "relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-popover/30",
+            viewerUrl && "min-h-[620px]",
           )}
         >
-          <motion.img
-            layout
-            src={brainImg}
-            alt="Brain"
-            width={1024}
-            height={1024}
-            loading="lazy"
-            className={cn(
-              "h-full w-auto select-none object-contain transition-all duration-700",
-              analyzed ? "opacity-80" : "opacity-40",
-              analyzing && "animate-pulse",
-            )}
-          />
-          {analyzed && (
-            <>
-              <span className="absolute left-[35%] top-[40%] h-3 w-3 animate-ping rounded-full bg-primary" />
-              <span className="absolute left-[55%] top-[30%] h-2 w-2 animate-ping rounded-full bg-primary/70 [animation-delay:.3s]" />
-              <span className="absolute left-[48%] top-[55%] h-2.5 w-2.5 animate-ping rounded-full bg-primary/80 [animation-delay:.6s]" />
-            </>
+          {viewerUrl ? (
+            <iframe
+              title="TRIBE v2 interactive cortical activation viewer"
+              src={viewerUrl}
+              className="h-[620px] w-full bg-black"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="no-referrer"
+            />
+          ) : analyzed ? (
+            <div className="max-w-md p-8 text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+              <p className="mt-4 text-sm font-medium">Brain viewer unavailable</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {analysis?.viewer_error ??
+                  "TRIBE returned scores, but the notebook did not provide an HTML viewer for this analysis."}
+              </p>
+            </div>
+          ) : (
+            <BrainPlaceholder3D analyzing={analyzing} />
           )}
-        </motion.div>
+        </div>
 
         <AnimatePresence mode="wait">
           {!analyzed ? (
-            <motion.p
+            <motion.div
               key="caption"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="mt-6 text-center text-sm text-muted-foreground"
+              className="mt-6 space-y-3 text-center"
             >
-              {analyzing
-                ? "Scanning neural pathways…"
-                : "Select media to begin neural analysis"}
-            </motion.p>
+              <p className="text-sm text-muted-foreground">
+                {analyzing
+                  ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
+                  : "Select media to begin neural analysis"}
+              </p>
+              {analyzing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <p className="mx-auto w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                    Please be patient, TRIBE V2 may take 3-6 minutes.
+                  </p>
+                  <AnalysisProgressTicker />
+                </motion.div>
+              )}
+            </motion.div>
           ) : (
             <motion.div
-              key="rubrics"
+              key="analysis"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mt-6 flex flex-1 flex-col gap-4"
             >
-              {RUBRICS.map((r, i) => (
+              <div className="grid gap-3 rounded-2xl border border-border bg-popover/40 p-4 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Input
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.input_type}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Shape
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {analysis.shape?.[0] ?? 0} frames x {analysis.shape?.[1] ?? 0} vertices
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Peak Activation Step
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.peak_activation_step}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Segments
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.segments?.length ?? 0}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Metadata
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {Object.entries(analysis.metadata ?? {})
+                      .map(([key, value]) => `${labelForScore(key)}: ${String(value)}`)
+                      .join(" · ") || "No metadata returned"}
+                  </p>
+                </div>
+              </div>
+
+              {(analysis.insight_summary || analysis.insight_error) && (
+                <div className="rounded-2xl border border-primary/15 bg-primary/[0.055] p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-primary/80">
+                    LLM Interpretation
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+                    {analysis.insight_summary ??
+                      "Natural-language interpretation could not be generated for this run. The TRIBE scores and viewer are still available."}
+                  </p>
+                </div>
+              )}
+
+              {scoreEntries.map(([key, rawScore], i) => {
+                const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+                const label = labelForScore(key);
+                return (
                 <motion.div
-                  key={r.key}
+                  key={key}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.15 }}
                   className="rounded-2xl border border-border bg-popover/40 p-4"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{r.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{label}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                            aria-label={`What ${label} means`}
+                          >
+                            <Info className="h-2.5 w-2.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="max-w-64 rounded-xl border border-white/10 bg-popover px-3 py-2 text-xs leading-relaxed text-foreground shadow-2xl"
+                        >
+                          {scoreInsight(key)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <span className="text-sm tabular-nums text-muted-foreground">
-                      {r.score}/100
+                      {score.toFixed(1)}/100
                     </span>
                   </div>
                   <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border/60">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${r.score}%` }}
+                      animate={{ width: `${score}%` }}
                       transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}
                       className="h-full rounded-full bg-primary"
                     />
                   </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {r.insight}
+                  <p className="rounded-xl border border-white/10 bg-background/25 p-3 text-xs leading-relaxed text-foreground/80">
+                    {narrativeInsightForScore(analysis, key)}
                   </p>
                 </motion.div>
-              ))}
+                );
+              })}
 
-              <Button
-                variant="outline"
-                className="mt-2 rounded-2xl border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Publish to Meta Ads
-              </Button>
+              {regionMaskEntries.length > 0 && (
+                <div className="rounded-2xl border border-border bg-popover/40 p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Region Masks
+                  </p>
+                  <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                    {regionMaskEntries.map(([key, range]) => (
+                      <div key={key} className="flex justify-between gap-3 rounded-xl bg-background/30 px-3 py-2">
+                        <span>{labelForScore(key)}</span>
+                        <span className="tabular-nums">
+                          {range?.[0]}-{range?.[1]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </section>
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-center"
+      >
+        <p className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_34px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+          Powered by <span className="text-foreground/80">Meta TRIBE V2</span>.
+        </p>
+      </motion.div>
     </div>
+    </TooltipProvider>
   );
 }
 
