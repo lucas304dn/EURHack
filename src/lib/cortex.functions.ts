@@ -366,6 +366,140 @@ export const deleteMedia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Neural analysis (TRIBE v2 Kaggle API) ----------
+const AnalyzeMediaInput = z.object({
+  id: z.string().uuid(),
+  type: z.enum(["text", "video", "audio"]),
+  title: z.string().nullable().optional(),
+  content_url: z.string().url().nullable().optional(),
+  content_text: z.string().nullable().optional(),
+});
+
+type AnalyzeMediaInput = z.infer<typeof AnalyzeMediaInput>;
+
+export type TribeActivationResult = {
+  input_type: "text" | "audio" | "video";
+  shape: number[];
+  activation?: number[][];
+  allPreds?: number[][];
+  segments: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
+  summary: {
+    scores?: Record<string, number>;
+    region_masks?: Record<string, [number, number]>;
+    peak_activation_step?: number;
+  };
+  scores: Record<string, number>;
+  region_masks: Record<string, [number, number]>;
+  peak_activation_step: number;
+  analysis_id?: string;
+  viewer_url?: string;
+  viewer_absolute_url?: string;
+  viewer_available?: boolean;
+  viewer_error?: string;
+};
+
+function getTribeApiBase() {
+  const raw = process.env.TRIBE_API_URL || process.env.VITE_TRIBE_API;
+  if (!raw) {
+    throw new Error("VITE_TRIBE_API is not configured");
+  }
+  return raw.replace(/\/+$/, "");
+}
+
+function titleToCampaignName(item: AnalyzeMediaInput) {
+  return item.title?.trim() || `${item.type} ${item.id.slice(0, 8)}`;
+}
+
+function filenameFromMedia(item: AnalyzeMediaInput) {
+  const fallbackExt = item.type === "video" ? "mp4" : "mp3";
+  const title = (item.title || item.type)
+    .replace(/[^a-z0-9._-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+  let ext = "";
+  if (item.content_url) {
+    try {
+      const last = new URL(item.content_url).pathname.split("/").pop() || "";
+      ext = last.match(/\.([a-z0-9]{2,5})$/i)?.[1] ?? "";
+    } catch {
+      ext = "";
+    }
+  }
+
+  const safeExt = ext || fallbackExt;
+  if (title.toLowerCase().endsWith(`.${safeExt.toLowerCase()}`)) {
+    return title;
+  }
+  return `${title || item.type}.${safeExt}`;
+}
+
+function withAbsoluteViewerUrl(result: TribeActivationResult, tribeBase: string) {
+  if (result.viewer_url && !result.viewer_url.startsWith("http")) {
+    return {
+      ...result,
+      viewer_absolute_url: `${tribeBase}${result.viewer_url}`,
+    };
+  }
+  return {
+    ...result,
+    viewer_absolute_url: result.viewer_url,
+  };
+}
+
+async function readTribeResponse(res: Response, tribeBase: string) {
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`TRIBE API ${res.status}: ${text.slice(0, 300)}`);
+  }
+
+  const result = JSON.parse(text) as TribeActivationResult;
+  if (!result.summary || !result.scores || typeof result.peak_activation_step !== "number") {
+    throw new Error("TRIBE API response is missing summary, scores, or peak_activation_step");
+  }
+
+  return withAbsoluteViewerUrl(result, tribeBase);
+}
+
+export const analyzeMedia = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => AnalyzeMediaInput.parse(input))
+  .handler(async ({ data }) => {
+    const tribeBase = getTribeApiBase();
+    const campaignName = titleToCampaignName(data);
+
+    if (data.type === "text") {
+      const text = data.content_text?.trim();
+      if (!text) throw new Error("Text media has no content to analyze");
+
+      const res = await fetch(`${tribeBase}/activate/text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, campaign_name: campaignName }),
+      });
+      return readTribeResponse(res, tribeBase);
+    }
+
+    if (!data.content_url) {
+      throw new Error(`${data.type} media has no URL to analyze`);
+    }
+
+    const mediaRes = await fetch(data.content_url);
+    if (!mediaRes.ok) {
+      throw new Error(`Failed to load ${data.type} media: ${mediaRes.status}`);
+    }
+
+    const form = new FormData();
+    form.append("file", await mediaRes.blob(), filenameFromMedia(data));
+    form.append("campaign_name", campaignName);
+
+    const res = await fetch(`${tribeBase}/activate/${data.type}`, {
+      method: "POST",
+      body: form,
+    });
+    return readTribeResponse(res, tribeBase);
+  });
+
 // ---------- Upload (Neural Feedback) ----------
 export const uploadMedia = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>

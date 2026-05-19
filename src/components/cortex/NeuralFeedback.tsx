@@ -3,10 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { Upload, Sparkles, Loader2, Mic, Type as TypeIcon, Send } from "lucide-react";
+import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Type as TypeIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { listMedia, uploadMedia } from "@/lib/cortex.functions";
+import { analyzeMedia, listMedia, uploadMedia, type TribeActivationResult } from "@/lib/cortex.functions";
 import brainImg from "@/assets/brain.png";
 import { cn } from "@/lib/utils";
 
@@ -19,41 +19,43 @@ type MediaItem = {
   created_at: string;
 };
 
-const RUBRICS = [
-  {
-    key: "attention",
-    label: "Attention",
-    score: 74,
-    insight:
-      "High parietal activation suggests this ad is likely to capture and hold viewer attention effectively.",
-  },
-  {
-    key: "focus",
-    label: "Focus",
-    score: 61,
-    insight:
-      "Prefrontal engagement indicates strong cognitive processing and sustained focus on the message.",
-  },
-  {
-    key: "virality",
-    label: "Virality",
-    score: 83,
-    insight:
-      "Elevated reward network activity suggests strong social sharing potential and emotional resonance.",
-  },
-] as const;
-
 const ANALYZABLE_MEDIA_TYPES = new Set(["text", "video", "audio"]);
+
+const SCORE_LABELS: Record<string, string> = {
+  visual_cortex: "Visual Cortex",
+  language_network: "Language Network",
+  attention: "Attention",
+  emotional_response: "Emotional Response",
+  memory_encoding: "Memory Encoding",
+  overall_impact: "Overall Impact",
+};
+
+const SCORE_INSIGHTS: Record<string, string> = {
+  visual_cortex: "Visual processing signal from the peak predicted cortical response.",
+  language_network: "Language-related activation estimate from the TRIBE vertex ranges.",
+  attention: "Attention-region activation estimate from the TRIBE response.",
+  emotional_response: "Reward/emotion-adjacent activation estimate for the selected creative.",
+  memory_encoding: "Memory-encoding signal from the approximate demo region mask.",
+  overall_impact: "Average of the available TRIBE region scores.",
+};
+
+function labelForScore(key: string) {
+  return SCORE_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function scoreInsight(key: string) {
+  return SCORE_INSIGHTS[key] ?? "TRIBE-derived activation score for this approximate vertex range.";
+}
 
 export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) {
   const qc = useQueryClient();
   const fnList = useServerFn(listMedia);
   const fnUpload = useServerFn(uploadMedia);
+  const fnAnalyze = useServerFn(analyzeMedia);
 
   const [selected, setSelected] = useState<MediaItem | null>(null);
   const [tab, setTab] = useState<"upload" | "gallery">("upload");
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
+  const [analysis, setAnalysis] = useState<TribeActivationResult | null>(null);
   const selectedIsAnalyzable = selected ? ANALYZABLE_MEDIA_TYPES.has(selected.type) : false;
 
   const mediaQ = useQuery({
@@ -116,6 +118,31 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const analyze = useMutation({
+    mutationFn: async (item: MediaItem) => {
+      if (!ANALYZABLE_MEDIA_TYPES.has(item.type)) {
+        throw new Error("Meta TRIBE V2 supports text, audio, and video only.");
+      }
+      return fnAnalyze({
+        data: {
+          id: item.id,
+          type: item.type as "text" | "video" | "audio",
+          title: item.title,
+          content_url: item.content_url,
+          content_text: item.content_text,
+        },
+      });
+    },
+    onSuccess: (result) => {
+      setAnalysis(result as TribeActivationResult);
+      toast.success("TRIBE analysis complete");
+    },
+    onError: (e: Error) => {
+      setAnalysis(null);
+      toast.error(e.message);
+    },
+  });
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: {
@@ -134,19 +161,26 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
       toast.error("Meta TRIBE V2 supports text, audio, and video only.");
       return;
     }
-    setAnalyzing(true);
-    setAnalyzed(false);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setAnalyzed(true);
-    }, 3000);
+    setAnalysis(null);
+    analyze.mutate(selected);
   };
 
   // Reset analysis when changing selection
   useEffect(() => {
-    setAnalyzed(false);
-    setAnalyzing(false);
+    setAnalysis(null);
   }, [selected?.id]);
+
+  const analyzing = analyze.isPending;
+  const analyzed = !!analysis;
+  const scoreEntries = Object.entries(analysis?.scores ?? analysis?.summary.scores ?? {}).sort(
+    ([a], [b]) => {
+      if (a === "overall_impact") return 1;
+      if (b === "overall_impact") return -1;
+      return a.localeCompare(b);
+    },
+  );
+  const regionMaskEntries = Object.entries(analysis?.region_masks ?? analysis?.summary.region_masks ?? {});
+  const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -315,42 +349,63 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
 
       {/* RIGHT */}
       <section className="glass-card relative flex flex-col rounded-3xl p-7">
-        {/* Reserved integration container — do not populate */}
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              TRIBE v2 Neural Response
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Interactive brain activation
+            </h2>
+          </div>
+          {analysis?.viewer_absolute_url && (
+            <Button asChild variant="outline" size="sm" className="rounded-xl">
+              <a href={analysis.viewer_absolute_url} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                Open
+              </a>
+            </Button>
+          )}
+        </div>
+
         <div
           id="brain-visualization-container"
-          style={{ border: "1px dashed #333" }}
-          className="pointer-events-none absolute inset-7 rounded-2xl opacity-0"
-          aria-hidden
-        />
-
-        <motion.div
-          layout
           className={cn(
-            "relative mx-auto flex items-center justify-center transition-all",
-            analyzed ? "h-44" : "h-72 flex-1",
+            "relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-popover/30",
+            viewerUrl && "min-h-[620px]",
           )}
         >
-          <motion.img
-            layout
-            src={brainImg}
-            alt="Brain"
-            width={1024}
-            height={1024}
-            loading="lazy"
-            className={cn(
-              "h-full w-auto select-none object-contain transition-all duration-700",
-              analyzed ? "opacity-80" : "opacity-40",
-              analyzing && "animate-pulse",
-            )}
-          />
-          {analyzed && (
-            <>
-              <span className="absolute left-[35%] top-[40%] h-3 w-3 animate-ping rounded-full bg-primary" />
-              <span className="absolute left-[55%] top-[30%] h-2 w-2 animate-ping rounded-full bg-primary/70 [animation-delay:.3s]" />
-              <span className="absolute left-[48%] top-[55%] h-2.5 w-2.5 animate-ping rounded-full bg-primary/80 [animation-delay:.6s]" />
-            </>
+          {viewerUrl ? (
+            <iframe
+              title="TRIBE v2 interactive cortical activation viewer"
+              src={viewerUrl}
+              className="h-[620px] w-full bg-black"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="no-referrer"
+            />
+          ) : analyzed ? (
+            <div className="max-w-md p-8 text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+              <p className="mt-4 text-sm font-medium">Brain viewer unavailable</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {analysis?.viewer_error ??
+                  "TRIBE returned scores, but the notebook did not provide an HTML viewer for this analysis."}
+              </p>
+            </div>
+          ) : (
+            <motion.img
+              src={brainImg}
+              alt="Brain placeholder"
+              width={1024}
+              height={1024}
+              loading="lazy"
+              className={cn(
+                "h-72 w-auto select-none object-contain opacity-40 transition-all duration-700",
+                analyzing && "animate-pulse",
+              )}
+            />
           )}
-        </motion.div>
+        </div>
 
         <AnimatePresence mode="wait">
           {!analyzed ? (
@@ -362,51 +417,103 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
               className="mt-6 text-center text-sm text-muted-foreground"
             >
               {analyzing
-                ? "Scanning neural pathways…"
+                ? "Calling TRIBE v2 and generating the peak-frame brain viewer..."
                 : "Select media to begin neural analysis"}
             </motion.p>
           ) : (
             <motion.div
-              key="rubrics"
+              key="analysis"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mt-6 flex flex-1 flex-col gap-4"
             >
-              {RUBRICS.map((r, i) => (
+              <div className="grid gap-3 rounded-2xl border border-border bg-popover/40 p-4 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Input
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.input_type}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Shape
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {analysis.shape?.[0] ?? 0} frames x {analysis.shape?.[1] ?? 0} vertices
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Peak Activation Step
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.peak_activation_step}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Segments
+                  </p>
+                  <p className="mt-1 font-medium">{analysis.segments?.length ?? 0}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Metadata
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {Object.entries(analysis.metadata ?? {})
+                      .map(([key, value]) => `${labelForScore(key)}: ${String(value)}`)
+                      .join(" · ") || "No metadata returned"}
+                  </p>
+                </div>
+              </div>
+
+              {scoreEntries.map(([key, rawScore], i) => {
+                const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+                return (
                 <motion.div
-                  key={r.key}
+                  key={key}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.15 }}
                   className="rounded-2xl border border-border bg-popover/40 p-4"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{r.label}</span>
+                    <span className="text-sm font-medium">{labelForScore(key)}</span>
                     <span className="text-sm tabular-nums text-muted-foreground">
-                      {r.score}/100
+                      {score.toFixed(1)}/100
                     </span>
                   </div>
                   <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-border/60">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${r.score}%` }}
+                      animate={{ width: `${score}%` }}
                       transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}
                       className="h-full rounded-full bg-primary"
                     />
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    {r.insight}
+                    {scoreInsight(key)}
                   </p>
                 </motion.div>
-              ))}
+                );
+              })}
 
-              <Button
-                variant="outline"
-                className="mt-2 rounded-2xl border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Publish to Meta Ads
-              </Button>
+              {regionMaskEntries.length > 0 && (
+                <div className="rounded-2xl border border-border bg-popover/40 p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Region Masks
+                  </p>
+                  <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                    {regionMaskEntries.map(([key, range]) => (
+                      <div key={key} className="flex justify-between gap-3 rounded-xl bg-background/30 px-3 py-2">
+                        <span>{labelForScore(key)}</span>
+                        <span className="tabular-nums">
+                          {range?.[0]}-{range?.[1]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
