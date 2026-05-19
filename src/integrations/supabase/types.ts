@@ -50,11 +50,16 @@ export type Database = {
           created_at: string
           id: string
           input_type: string
+          insight_error: string | null
+          insight_generated_at: string | null
+          insight_model: string | null
+          insight_summary: string | null
           media_item_id: string
           metadata: Json
           peak_activation_step: number
           region_masks: Json
           result_payload: Json
+          score_insights: Json
           scores: Json
           segments: Json
           shape: Json
@@ -71,11 +76,16 @@ export type Database = {
           created_at?: string
           id?: string
           input_type: string
+          insight_error?: string | null
+          insight_generated_at?: string | null
+          insight_model?: string | null
+          insight_summary?: string | null
           media_item_id: string
           metadata?: Json
           peak_activation_step: number
           region_masks?: Json
           result_payload?: Json
+          score_insights?: Json
           scores?: Json
           segments?: Json
           shape?: Json
@@ -92,11 +102,16 @@ export type Database = {
           created_at?: string
           id?: string
           input_type?: string
+          insight_error?: string | null
+          insight_generated_at?: string | null
+          insight_model?: string | null
+          insight_summary?: string | null
           media_item_id?: string
           metadata?: Json
           peak_activation_step?: number
           region_masks?: Json
           result_payload?: Json
+          score_insights?: Json
           scores?: Json
           segments?: Json
           shape?: Json

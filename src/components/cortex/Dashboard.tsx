@@ -133,7 +133,7 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-5xl font-semibold tracking-tight md:text-6xl"
         >
-          Welcome, Nikitas
+          Welcome, eurhacknl
         </motion.h1>
         <p className="text-4xl font-semibold tracking-tight text-muted-foreground md:text-5xl">
           Ready to generate new ads?

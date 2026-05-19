@@ -15,6 +15,8 @@ const GenMediaInput = z.object({
   imageUrls: z.array(z.string().url().max(2048)).max(3).optional(),
 });
 
+const OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+
 // ---------- TEXT (OpenRouter) — returns variants WITHOUT persisting ----------
 export const generateText = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => GenInput.parse(input))
@@ -29,7 +31,7 @@ export const generateText = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        model: OPENROUTER_MODEL,
         messages: [
           {
             role: "system",
@@ -278,8 +280,8 @@ async function generateAdScript(prompt: string): Promise<string> {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "nvidia/nemotron-3-super-120b-a12b:free",
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
       messages: [
         {
           role: "system",
@@ -384,6 +386,15 @@ function asNumberRecord(value: unknown): Record<string, number> {
   );
 }
 
+function asStringRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, raw]) => [key, typeof raw === "string" ? raw.trim() : String(raw ?? "").trim()] as const)
+      .filter(([, text]) => text.length > 0),
+  );
+}
+
 function asRegionMaskRecord(value: unknown): Record<string, [number, number]> {
   if (!isRecord(value)) return {};
   return Object.fromEntries(
@@ -409,6 +420,11 @@ function serializeAnalysisRun(row: TribeAnalysisRunRow) {
     metadata: asJsonRecord(row.metadata),
     summary: asJsonRecord(row.summary),
     scores: asNumberRecord(row.scores),
+    score_insights: asStringRecord(row.score_insights),
+    insight_summary: row.insight_summary,
+    insight_model: row.insight_model,
+    insight_error: row.insight_error,
+    insight_generated_at: row.insight_generated_at,
     region_masks: asRegionMaskRecord(row.region_masks),
     peak_activation_step: row.peak_activation_step,
     viewer_url: row.viewer_url,
@@ -501,6 +517,11 @@ export type TribeActivationResult = {
   viewer_absolute_url?: string;
   viewer_available?: boolean;
   viewer_error?: string;
+  insight_summary?: string;
+  score_insights?: Record<string, string>;
+  insight_model?: string;
+  insight_error?: string;
+  insight_generated_at?: string;
   analysis_db_id?: string;
   persistence_error?: string;
 };
@@ -584,6 +605,172 @@ function compactTribeResult(result: TribeActivationResult) {
   };
 }
 
+const SCORE_LABELS: Record<string, string> = {
+  visual_cortex: "Visual Cortex",
+  language_network: "Language Network",
+  attention: "Attention",
+  emotional_response: "Emotional Response",
+  memory_encoding: "Memory Encoding",
+  overall_impact: "Overall Impact",
+};
+
+const RUBRIC_HINTS: Record<string, string> = {
+  visual_cortex: "Predicted visual-processing signal from TRIBE's approximate vertex ranges.",
+  language_network: "Predicted language/message-processing signal from TRIBE's approximate vertex ranges.",
+  attention: "Predicted attention-adjacent cortical signal from TRIBE's response.",
+  emotional_response: "Predicted reward/emotion-adjacent signal from the selected creative.",
+  memory_encoding: "Predicted memory-encoding-adjacent signal from the approximate demo region mask.",
+  overall_impact: "Average of available TRIBE region scores for a broad summary signal.",
+};
+
+type TribeNarrativeInsights = {
+  insight_summary?: string;
+  score_insights?: Record<string, string>;
+  insight_model?: string;
+  insight_error?: string;
+  insight_generated_at?: string;
+};
+
+function extractJsonObject(text: string) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+  const candidate = fenced ?? text.match(/\{[\s\S]*\}/)?.[0] ?? text;
+  return JSON.parse(candidate) as unknown;
+}
+
+function sanitizeInsightText(value: unknown, maxLength: number) {
+  return typeof value === "string"
+    ? value.replace(/\s+/g, " ").trim().slice(0, maxLength)
+    : "";
+}
+
+function sanitizeLlmInsights(value: unknown, scoreKeys: string[]): Pick<TribeNarrativeInsights, "insight_summary" | "score_insights"> {
+  const parsed = isRecord(value) ? value : {};
+  const rawInsights = isRecord(parsed.score_insights) ? parsed.score_insights : {};
+  const score_insights = Object.fromEntries(
+    scoreKeys
+      .map((key) => [key, sanitizeInsightText(rawInsights[key], 360)] as const)
+      .filter(([, text]) => text.length > 0),
+  );
+
+  return {
+    insight_summary: sanitizeInsightText(parsed.summary ?? parsed.insight_summary, 520),
+    score_insights,
+  };
+}
+
+function contentPreviewForInsights(item: AnalyzeMediaInput) {
+  if (item.type !== "text" && item.type !== "audio") return "";
+  return item.content_text?.replace(/\s+/g, " ").trim().slice(0, 900) ?? "";
+}
+
+function buildInsightPrompt(item: AnalyzeMediaInput, result: TribeActivationResult) {
+  const scores = result.scores ?? result.summary.scores ?? {};
+  const scoreKeys = Object.keys(scores);
+  return JSON.stringify({
+    task:
+      "Interpret these TRIBE V2 predicted brain activation results for a founder or marketer. Use cautious, assistive language only.",
+    strict_style_rules: [
+      "Do not claim real humans will behave a certain way.",
+      "Do not say the campaign definitely attracts, converts, persuades, or improves performance.",
+      "Use hedged wording such as may, could, might, appears, suggests, is consistent with.",
+      "Do not explain what each rubric means. The UI has separate info labels for rubric definitions.",
+      "Each rubric insight should be one concise sentence focused on what this result may suggest.",
+      "Keep all advice practical but non-decisive.",
+    ],
+    output_schema: {
+      summary: "One or two cautious sentences summarizing the overall pattern.",
+      score_insights: Object.fromEntries(scoreKeys.map((key) => [key, "One concise cautious insight for this rubric."])),
+    },
+    media: {
+      input_type: result.input_type,
+      title: item.title,
+      content_preview: contentPreviewForInsights(item),
+    },
+    tribe_result: {
+      scores,
+      rubric_context: Object.fromEntries(
+        scoreKeys.map((key) => [
+          key,
+          {
+            label: SCORE_LABELS[key] ?? key,
+            hint: RUBRIC_HINTS[key] ?? "TRIBE-derived activation score.",
+          },
+        ]),
+      ),
+      peak_activation_step: result.peak_activation_step,
+      shape: result.shape,
+      segment_count: result.segments?.length ?? 0,
+      metadata: result.metadata ?? {},
+    },
+  });
+}
+
+async function generateTribeNarrativeInsights(
+  item: AnalyzeMediaInput,
+  result: TribeActivationResult,
+): Promise<TribeNarrativeInsights> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) {
+    return { insight_error: "OPENROUTER_API_KEY is not configured" };
+  }
+
+  try {
+    const scoreKeys = Object.keys(result.scores ?? result.summary.scores ?? {});
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You write cautious, useful neuroscience-style product insights. Return only valid JSON. Avoid deterministic claims about user behavior or campaign performance.",
+          },
+          {
+            role: "user",
+            content: buildInsightPrompt(item, result),
+          },
+        ],
+        temperature: 0.35,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenRouter insights ${res.status}: ${(await res.text()).slice(0, 240)}`);
+    }
+
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const content = json.choices?.[0]?.message?.content ?? "";
+    const parsed = extractJsonObject(content);
+    const sanitized = sanitizeLlmInsights(parsed, scoreKeys);
+
+    return {
+      ...sanitized,
+      insight_model: OPENROUTER_MODEL,
+      insight_generated_at: new Date().toISOString(),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to generate TRIBE narrative insights", error);
+    return {
+      insight_model: OPENROUTER_MODEL,
+      insight_error: message,
+    };
+  }
+}
+
+async function enrichTribeResultWithInsights(item: AnalyzeMediaInput, result: TribeActivationResult) {
+  const insights = await generateTribeNarrativeInsights(item, result);
+  return {
+    ...result,
+    ...insights,
+  };
+}
+
 async function persistTribeAnalysisRun(
   item: AnalyzeMediaInput,
   result: TribeActivationResult,
@@ -610,6 +797,11 @@ async function persistTribeAnalysisRun(
         viewer_absolute_url: result.viewer_absolute_url ?? null,
         viewer_available: result.viewer_available ?? false,
         viewer_error: result.viewer_error ?? null,
+        insight_summary: result.insight_summary ?? null,
+        score_insights: toJson(result.score_insights ?? {}),
+        insight_model: result.insight_model ?? null,
+        insight_error: result.insight_error ?? null,
+        insight_generated_at: result.insight_generated_at ?? null,
         result_payload: toJson(compactTribeResult(result)),
       })
       .select("id")
@@ -640,7 +832,8 @@ export const analyzeMedia = createServerFn({ method: "POST" })
         body: JSON.stringify({ text, campaign_name: campaignName }),
       });
       const result = await readTribeResponse(res, tribeBase);
-      return persistTribeAnalysisRun(data, result);
+      const enriched = await enrichTribeResultWithInsights(data, result);
+      return persistTribeAnalysisRun(data, enriched);
     }
 
     if (!data.content_url) {
@@ -661,7 +854,8 @@ export const analyzeMedia = createServerFn({ method: "POST" })
       body: form,
     });
     const result = await readTribeResponse(res, tribeBase);
-    return persistTribeAnalysisRun(data, result);
+    const enriched = await enrichTribeResultWithInsights(data, result);
+    return persistTribeAnalysisRun(data, enriched);
   });
 
 // ---------- Upload (Neural Feedback) ----------

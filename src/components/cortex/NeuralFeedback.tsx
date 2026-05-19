@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic } from "lucide-react";
+import { AlertCircle, ExternalLink, Upload, Sparkles, Loader2, Mic, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { analyzeMedia, listMedia, uploadMedia, type TribeActivationResult } from "@/lib/cortex.functions";
 import brainImg from "@/assets/brain.png";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,15 @@ function labelForScore(key: string) {
 
 function scoreInsight(key: string) {
   return SCORE_INSIGHTS[key] ?? "TRIBE-derived activation score for this approximate vertex range.";
+}
+
+function narrativeInsightForScore(analysis: TribeActivationResult | null, key: string) {
+  const insight = analysis?.score_insights?.[key]?.trim();
+  if (insight) return insight;
+  if (analysis?.insight_error) {
+    return "Natural-language interpretation is unavailable for this run, but the score still reflects the saved TRIBE output.";
+  }
+  return "Natural-language interpretation will appear here after the LLM reviews the saved TRIBE result.";
 }
 
 function textPreview(item: MediaItem) {
@@ -378,6 +388,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
   const viewerUrl = analysis?.viewer_available ? analysis.viewer_absolute_url : null;
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-6">
       <motion.header
         initial={{ opacity: 0, y: 8 }}
@@ -668,8 +679,21 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                 </div>
               </div>
 
+              {(analysis.insight_summary || analysis.insight_error) && (
+                <div className="rounded-2xl border border-primary/15 bg-primary/[0.055] p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-primary/80">
+                    LLM Interpretation
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+                    {analysis.insight_summary ??
+                      "Natural-language interpretation could not be generated for this run. The TRIBE scores and viewer are still available."}
+                  </p>
+                </div>
+              )}
+
               {scoreEntries.map(([key, rawScore], i) => {
                 const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+                const label = labelForScore(key);
                 return (
                 <motion.div
                   key={key}
@@ -679,7 +703,26 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   className="rounded-2xl border border-border bg-popover/40 p-4"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{labelForScore(key)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{label}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                            aria-label={`What ${label} means`}
+                          >
+                            <Info className="h-2.5 w-2.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="max-w-64 rounded-xl border border-white/10 bg-popover px-3 py-2 text-xs leading-relaxed text-foreground shadow-2xl"
+                        >
+                          {scoreInsight(key)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <span className="text-sm tabular-nums text-muted-foreground">
                       {score.toFixed(1)}/100
                     </span>
@@ -692,8 +735,8 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                       className="h-full rounded-full bg-primary"
                     />
                   </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {scoreInsight(key)}
+                  <p className="rounded-xl border border-white/10 bg-background/25 p-3 text-xs leading-relaxed text-foreground/80">
+                    {narrativeInsightForScore(analysis, key)}
                   </p>
                 </motion.div>
                 );
@@ -731,6 +774,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
         </p>
       </motion.div>
     </div>
+    </TooltipProvider>
   );
 }
 

@@ -182,6 +182,11 @@ type LatestAnalysis = {
   metadata: Record<string, unknown>;
   summary: Record<string, unknown>;
   scores: Record<string, number>;
+  score_insights: Record<string, string>;
+  insight_summary: string | null;
+  insight_model: string | null;
+  insight_error: string | null;
+  insight_generated_at: string | null;
   region_masks: Record<string, [number, number]>;
   peak_activation_step: number;
   viewer_url: string | null;
@@ -217,6 +222,9 @@ type CampaignExportRow = {
   segments: string;
   viewerUrl: string;
   scores: Score[];
+  scoreInsights: Record<string, string>;
+  insightSummary: string;
+  insightError: string;
   peakActivationStep: string;
   aiInsights: string;
 };
@@ -275,6 +283,17 @@ function buildAnalysisInsights(analysis: LatestAnalysis | null | undefined, scor
     return "No saved TRIBE analysis has been run for this asset yet.";
   }
 
+  const savedInsights = Object.entries(analysis.score_insights ?? {})
+    .map(([key, value]) => `${labelForScore(key)}: ${value}`)
+    .join(" ");
+  if (analysis.insight_summary || savedInsights) {
+    return [analysis.insight_summary, savedInsights].filter(Boolean).join(" ");
+  }
+
+  if (analysis.insight_error) {
+    return `LLM interpretation was unavailable for this run: ${analysis.insight_error}`;
+  }
+
   const overall = scores.find((score) => score.key === "overall_impact");
   const topScores = scores
     .filter((score) => score.key !== "overall_impact")
@@ -317,6 +336,9 @@ function buildCampaignExportRows(items: MediaItem[]): CampaignExportRow[] {
       segments: analysis ? String(analysis.segments?.length ?? 0) : "",
       viewerUrl: analysis?.viewer_absolute_url ?? analysis?.viewer_url ?? "",
       scores,
+      scoreInsights: analysis?.score_insights ?? {},
+      insightSummary: analysis?.insight_summary ?? "",
+      insightError: analysis?.insight_error ?? "",
       peakActivationStep: analysis ? String(analysis.peak_activation_step) : "",
       aiInsights: buildAnalysisInsights(analysis, scores),
     };
@@ -340,6 +362,9 @@ function exportCsv(rows: CampaignExportRow[]) {
     "Peak Activation Step",
     "Viewer URL",
     ...scoreHeaders.map((score) => score.label),
+    ...scoreHeaders.map((score) => `${score.label} Insight`),
+    "LLM Summary",
+    "LLM Error",
     "Analysis Insights",
   ];
 
@@ -359,6 +384,9 @@ function exportCsv(rows: CampaignExportRow[]) {
       row.peakActivationStep,
       row.viewerUrl,
       ...scoreHeaders.map((score) => scoreValueForHeader(row, score.key)),
+      ...scoreHeaders.map((score) => row.scoreInsights[score.key] ?? ""),
+      row.insightSummary,
+      row.insightError,
       row.aiInsights,
     ]
       .map(csvCell)
@@ -495,6 +523,19 @@ function createPdfReport(rows: CampaignExportRow[]) {
   sectionBox(92);
   heading("Analysis Insights");
   paragraph(primary.aiInsights, 92);
+
+  if (Object.keys(primary.scoreInsights).length > 0) {
+    sectionBox(48 + Object.keys(primary.scoreInsights).length * 30);
+    heading("Rubric Interpretations");
+    primary.scores.forEach((score) => {
+      const insight = primary.scoreInsights[score.key];
+      if (!insight) return;
+      ensureSpace(30);
+      text(score.label, margin, y, 9, color(17, 24, 39), "F2");
+      y += 12;
+      paragraph(insight, 92);
+    });
+  }
 
   heading("Campaign Assets");
   rows.forEach((row, index) => {
