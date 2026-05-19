@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cortex - Business Model Canvas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1115;
+    --sidebar: #11141a;
+    --card: #171a20;
+    --panel: #20252d;
+    --line: rgba(255,255,255,0.09);
+    --text: #e8e9ed;
+    --muted: #8c93a1;
+    --soft: #b9c0cc;
+    --cyan: #8fd7ff;
+    --purple: #a99bff;
+    --green: #7af0c1;
+    --amber: #f1c36a;
+  }
+  body {
+    min-height: 100vh;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.34);
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-end;
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 650;
+  }
+  .subtitle {
+    max-width: 660px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .tag {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--soft);
+    background: rgba(255,255,255,0.04);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag strong { color: var(--cyan); font-weight: 700; }
+  .bmc-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.35fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .bmc-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .cell {
+    min-height: 150px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cell.accent { background: #1d2b38; border-color: rgba(143,215,255,0.24); }
+  .cell.tall { grid-row: span 2; }
+  .label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .mark {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: var(--cyan);
+    box-shadow: 0 0 18px rgba(143,215,255,0.28);
+  }
+  .cell:nth-child(2n) .mark { background: var(--purple); }
+  .cell:nth-child(3n) .mark { background: var(--green); }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  li {
+    position: relative;
+    padding-left: 15px;
+    color: var(--soft);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.68em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(143,215,255,0.68);
+  }
+  .highlight { color: var(--text); font-weight: 650; }
+  .warn { color: var(--amber); }
+  .bottom-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 22px;
+  }
+  .note {
+    margin-top: 14px;
+    border: 1px solid rgba(241,195,106,0.24);
+    background: rgba(241,195,106,0.08);
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: #e9cf94;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .note strong { color: var(--amber); }
+  @media (max-width: 980px) {
+    body { padding: 14px; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .tags { justify-content: flex-start; }
+    .bmc-main, .bmc-bottom { grid-template-columns: 1fr; }
+    .cell.tall { grid-row: auto; }
+    .bottom-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="header">
+    <div>
+      <div class="eyebrow">Business Model Canvas</div>
+      <h1>Cortex turns ad creation into a testable workflow.</h1>
+      <p class="subtitle">The current buildathon version uses TRIBE v2 as a non-commercial proof of concept. A future paid version needs permission, a research partner, or a proprietary model.</p>
+    </div>
+    <div class="tags">
+      <span class="tag"><strong>EurHackNL</strong> May 2026</span>
+      <span class="tag">Student buildathon version</span>
+    </div>
+  </header>
+
+  <section class="bmc-main">
+    <div class="cell tall">
+      <div class="label"><span class="mark"></span>Key Partners</div>
+      <ul>
+        <li>University mentors and neuroscience advisors</li>
+        <li>TRIBE v2 and Meta FAIR research materials for the proof of concept</li>
+        <li>OpenNeuro and Human Connectome Project data for future model work</li>
+        <li>Cloud GPU providers for training and inference</li>
+        <li>Marketing clubs, student founders, and small brands for feedback</li>
+      </ul>
+    </div>
+
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Key Activities</div>
+      <ul>
+        <li>Generate text, image, video, and audio ad ideas</li>
+        <li>Analyze text, audio, and video with TRIBE v2 in the demo</li>
+        <li>Turn neural scores into simple creative feedback</li>
+        <li>Export results for a presentation or campaign review</li>
+      </ul>
+    </div>
+
+    <div class="cell accent tall">
+      <div class="label"><span class="mark"></span>Value Proposition</div>
+      <ul>
+        <li class="highlight">Create ads and get early feedback before spending money.</li>
+        <li>Compare creative ideas using attention, emotion, memory, language, and overall score signals</li>
+        <li>Give small teams a faster alternative to guessing from opinions alone</li>
+        <li>No lab hardware needed for the demo workflow</li>
+        <li>A future proprietary model would make the commercial version stronger</li>
+      </ul>
+    </div>
+
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Customer Relationships</div>
+      <ul>
+        <li>Self-serve demo</li>
+        <li>Student team onboarding</li>
+        <li>Small pilot projects</li>
+        <li>Simple exportable reports</li>
+      </ul>
+    </div>
+
+    <div class="cell tall">
+      <div class="label"><span class="mark"></span>Customer Segments</div>
+      <ul>
+        <li>Student founders</li>
+        <li>University marketing clubs</li>
+        <li>Small businesses testing social ads</li>
+        <li>Creators and early-stage teams</li>
+        <li>Marketing agencies as a later segment</li>
+      </ul>
+    </div>
+
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Key Resources</div>
+      <ul>
+        <li>Cortex web app and dashboard</li>
+        <li>Generated ad examples and saved results</li>
+        <li>TRIBE v2 demo connection</li>
+        <li>Team skills in frontend, backend, and AI APIs</li>
+        <li>Future model rights or research partnership</li>
+      </ul>
+    </div>
+
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Channels</div>
+      <ul>
+        <li>Buildathon demo</li>
+        <li>University network</li>
+        <li>Marketing and entrepreneurship clubs</li>
+        <li>LinkedIn posts and founder outreach</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="bmc-bottom">
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Cost Structure</div>
+      <ul class="bottom-list">
+        <li class="warn">GPU or API costs for neural analysis</li>
+        <li>LLM and media generation APIs</li>
+        <li>Hosting and database costs</li>
+        <li>Model training experiments if we continue</li>
+        <li>Design, engineering, and user testing time</li>
+        <li>Legal help for any paid version</li>
+      </ul>
+    </div>
+    <div class="cell">
+      <div class="label"><span class="mark"></span>Revenue Streams</div>
+      <ul class="bottom-list">
+        <li>Monthly student or small team plans</li>
+        <li>Pay per ad analysis</li>
+        <li>Paid pilot projects for small brands</li>
+        <li>Exported creative reports</li>
+        <li>Future API access</li>
+      </ul>
+    </div>
+  </section>
+
+  <aside class="note">
+    <strong>License note:</strong> TRIBE v2 is useful for a non-commercial buildathon proof of concept. It should not be presented as a ready-to-sell commercial engine. If Cortex continues after the event, the next step is to secure permission, work with a research partner, or train a model that can be used commercially.
+  </aside>
+</main>
+</body>
+</html>

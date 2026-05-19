@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cortex - 3-Year Continuation Model</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1115;
+    --card: #171a20;
+    --panel: #20252d;
+    --line: rgba(255,255,255,0.09);
+    --text: #e8e9ed;
+    --muted: #8c93a1;
+    --soft: #b9c0cc;
+    --cyan: #8fd7ff;
+    --purple: #a99bff;
+    --green: #7af0c1;
+    --amber: #f1c36a;
+    --red: #ff8a8a;
+  }
+  body {
+    min-height: 100vh;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px;
+  }
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.34);
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-end;
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 650;
+  }
+  .subtitle {
+    max-width: 700px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .tag {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--soft);
+    background: rgba(255,255,255,0.04);
+    font-size: 11px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .metric {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    min-height: 118px;
+  }
+  .metric .lbl {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .metric .val {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .metric .sub {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 6px 0 14px;
+    color: var(--soft);
+    font-size: 12px;
+  }
+  .legend span { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; }
+  .chart {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 18px;
+    padding: 18px 18px 20px;
+    margin-bottom: 22px;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 120px repeat(4, 1fr);
+    gap: 12px;
+    align-items: end;
+    height: 260px;
+    padding-top: 10px;
+  }
+  .axis {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: right;
+    padding-right: 4px;
+  }
+  .group {
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: end;
+    gap: 7px;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding-left: 12px;
+    position: relative;
+  }
+  .bar {
+    border-radius: 6px 6px 2px 2px;
+    min-height: 2px;
+    position: relative;
+  }
+  .bar.revenue { background: var(--green); }
+  .bar.costs { background: var(--red); }
+  .bar.net { background: var(--cyan); }
+  .bar.loss { background: var(--purple); opacity: 0.92; }
+  .group-label {
+    position: absolute;
+    left: 12px;
+    right: 0;
+    bottom: -23px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+  }
+  .milestones {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 36px 0 22px;
+  }
+  .ms {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    min-height: 226px;
+  }
+  .period {
+    color: var(--cyan);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .ms h2 {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  li {
+    position: relative;
+    padding-left: 14px;
+    color: var(--soft);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  li::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(143,215,255,0.68);
+    position: absolute;
+    left: 0;
+    top: 0.68em;
+  }
+  .badge {
+    display: inline-block;
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 9px;
+    color: var(--text);
+    background: rgba(143,215,255,0.08);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 820px;
+    background: var(--card);
+  }
+  th {
+    text-align: left;
+    padding: 11px 14px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    color: var(--soft);
+  }
+  tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .positive { color: var(--green); font-weight: 700; }
+  .negative { color: var(--red); font-weight: 700; }
+  .row-header { color: var(--text); font-weight: 700; }
+  .row-sub { color: var(--soft); padding-left: 28px !important; }
+  .section-divider td {
+    background: rgba(255,255,255,0.035);
+    color: var(--cyan);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .note {
+    border: 1px solid rgba(241,195,106,0.24);
+    background: rgba(241,195,106,0.08);
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: #e9cf94;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .note strong { color: var(--amber); }
+  @media (max-width: 920px) {
+    body { padding: 14px; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .metrics, .milestones { grid-template-columns: 1fr; }
+    .chart-grid { grid-template-columns: 72px repeat(4, 1fr); gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="header">
+    <div>
+      <div class="eyebrow">3-Year Continuation Model</div>
+      <h1>A simple plan for what happens after the buildathon.</h1>
+      <p class="subtitle">This is not a promise or a fundraising claim. It is a practical scenario for keeping Cortex alive, testing it with users, and solving the model licensing question before any paid launch.</p>
+    </div>
+    <span class="tag">TRIBE v2 proof of concept only</span>
+  </header>
+
+  <section class="metrics">
+    <div class="metric">
+      <div class="lbl">Year 3 possible revenue</div>
+      <div class="val">EUR 300k</div>
+      <div class="sub">Scenario if the product reaches around 80 paying clients</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">Year 1 funding need</div>
+      <div class="val">EUR 40k</div>
+      <div class="sub">Grant, prize money, or sponsor support</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">Break-even scenario</div>
+      <div class="val">Y3 Q2</div>
+      <div class="sub">Only after the model path is solved</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">Model training estimate</div>
+      <div class="val">EUR 15k</div>
+      <div class="sub">One-time compute estimate using public fMRI data</div>
+    </div>
+  </section>
+
+  <section class="chart" aria-label="Financial model chart">
+    <div class="legend">
+      <span><span class="dot" style="background: var(--green);"></span>Revenue</span>
+      <span><span class="dot" style="background: var(--red);"></span>Costs</span>
+      <span><span class="dot" style="background: var(--cyan);"></span>Profit or loss</span>
+    </div>
+    <div class="chart-grid">
+      <div class="axis">
+        <span>EUR 300k</span>
+        <span>EUR 150k</span>
+        <span>EUR 0</span>
+      </div>
+      <div class="group">
+        <div class="bar revenue" style="height: 1%;"></div>
+        <div class="bar costs" style="height: 1%;"></div>
+        <div class="bar loss" style="height: 1%;"></div>
+        <div class="group-label">Y0</div>
+      </div>
+      <div class="group">
+        <div class="bar revenue" style="height: 1%;"></div>
+        <div class="bar costs" style="height: 8%;"></div>
+        <div class="bar loss" style="height: 8%;"></div>
+        <div class="group-label">Year 1</div>
+      </div>
+      <div class="group">
+        <div class="bar revenue" style="height: 12%;"></div>
+        <div class="bar costs" style="height: 14%;"></div>
+        <div class="bar loss" style="height: 2%;"></div>
+        <div class="group-label">Year 2</div>
+      </div>
+      <div class="group">
+        <div class="bar revenue" style="height: 100%;"></div>
+        <div class="bar costs" style="height: 48%;"></div>
+        <div class="bar net" style="height: 52%;"></div>
+        <div class="group-label">Year 3</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="milestones">
+    <div class="ms">
+      <div class="period">May 2026</div>
+      <h2>Buildathon</h2>
+      <ul>
+        <li>Show the full Cortex demo with TRIBE v2</li>
+        <li>Use it only as a non-commercial proof of concept</li>
+        <li>Collect judge, mentor, and student feedback</li>
+      </ul>
+      <span class="badge">Target: strong demo</span>
+    </div>
+    <div class="ms">
+      <div class="period">2026 to 2027</div>
+      <h2>Year 1: Build</h2>
+      <ul>
+        <li>Improve the dashboard and report exports</li>
+        <li>Research a proprietary or licensed model path</li>
+        <li>Run free tests with student teams and small brands</li>
+        <li>Apply for grants or small sponsor support</li>
+      </ul>
+      <span class="badge">Focus: solve the model path</span>
+    </div>
+    <div class="ms">
+      <div class="period">2027 to 2028</div>
+      <h2>Year 2: Launch Test</h2>
+      <ul>
+        <li>Launch only if commercial model use is solved</li>
+        <li>Start with 10 to 30 paying clients</li>
+        <li>Keep pricing simple and affordable</li>
+        <li>Track whether feedback improves creative choices</li>
+      </ul>
+      <span class="badge">Scenario: EUR 36k revenue</span>
+    </div>
+    <div class="ms">
+      <div class="period">2028 to 2029</div>
+      <h2>Year 3: Scale Carefully</h2>
+      <ul>
+        <li>Reach around 80 paying clients in the scenario</li>
+        <li>Add part-time team support</li>
+        <li>Offer reports, API use, and pilot packages</li>
+        <li>Stay careful about license and model claims</li>
+      </ul>
+      <span class="badge">Scenario: EUR 300k revenue</span>
+    </div>
+  </section>
+
+  <section class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Line item</th>
+          <th class="num">Y0</th>
+          <th class="num">Year 1</th>
+          <th class="num">Year 2</th>
+          <th class="num">Year 3</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section-divider"><td colspan="5">Revenue</td></tr>
+        <tr><td class="row-sub">SaaS subscriptions</td><td class="num">0</td><td class="num">0</td><td class="num">EUR 24,000</td><td class="num">EUR 216,000</td></tr>
+        <tr><td class="row-sub">API or pay-per-use</td><td class="num">0</td><td class="num">0</td><td class="num">EUR 8,000</td><td class="num">EUR 48,000</td></tr>
+        <tr><td class="row-sub">Pilot projects and reports</td><td class="num">0</td><td class="num">0</td><td class="num">EUR 4,000</td><td class="num">EUR 36,000</td></tr>
+        <tr><td class="row-header positive">Total revenue</td><td class="num positive">0</td><td class="num positive">0</td><td class="num positive">EUR 36,000</td><td class="num positive">EUR 300,000</td></tr>
+
+        <tr class="section-divider"><td colspan="5">Costs</td></tr>
+        <tr><td class="row-sub">Model training compute</td><td class="num">0</td><td class="num negative">EUR 15,000</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td class="row-sub">Inference and GPU costs</td><td class="num negative">EUR 200</td><td class="num negative">EUR 2,000</td><td class="num negative">EUR 6,000</td><td class="num negative">EUR 24,000</td></tr>
+        <tr><td class="row-sub">Engineering and part-time help</td><td class="num">0</td><td class="num negative">EUR 5,000</td><td class="num negative">EUR 24,000</td><td class="num negative">EUR 80,000</td></tr>
+        <tr><td class="row-sub">Tools, cloud, and infrastructure</td><td class="num">0</td><td class="num negative">EUR 2,000</td><td class="num negative">EUR 6,000</td><td class="num negative">EUR 24,000</td></tr>
+        <tr><td class="row-sub">Marketing and outreach</td><td class="num">0</td><td class="num negative">EUR 1,000</td><td class="num negative">EUR 6,000</td><td class="num negative">EUR 16,000</td></tr>
+        <tr><td class="row-header negative">Total costs</td><td class="num negative">EUR 200</td><td class="num negative">EUR 25,000</td><td class="num negative">EUR 42,000</td><td class="num negative">EUR 144,000</td></tr>
+
+        <tr class="section-divider"><td colspan="5">Outcome</td></tr>
+        <tr><td class="row-header">Net profit or loss</td><td class="num negative">EUR -200</td><td class="num negative">EUR -25,000</td><td class="num negative">EUR -6,000</td><td class="num positive">EUR 156,000</td></tr>
+        <tr><td class="row-header">Possible funding source</td><td class="num">Prize</td><td class="num">Grant or sponsor</td><td class="num">Small angel check</td><td class="num">Optional seed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <aside class="note">
+    <strong>How to present this:</strong> Year 1 has no revenue because the current TRIBE v2 version is only for the non-commercial demo. The point of the model is to show what it could cost to keep building, solve the commercial model question, and test whether people would pay later. It should be presented as a scenario, not as a promise.
+  </aside>
+</main>
+</body>
+</html>
