@@ -17,11 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,9 +61,7 @@ export function Dashboard() {
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<Format>("text");
   const [voice, setVoice] = useState<string>(VOICES[0].id);
-  const [variants, setVariants] = useState<
-    { prompt: string; items: string[] } | null
-  >(null);
+  const [variants, setVariants] = useState<{ prompt: string; items: string[] } | null>(null);
 
   const fnText = useServerFn(generateText);
   const fnImage = useServerFn(generateImage);
@@ -179,9 +173,7 @@ export function Dashboard() {
                     )}
                   >
                     {v.label}
-                    {voice === v.id && (
-                      <Check className="ml-auto h-3.5 w-3.5 text-primary" />
-                    )}
+                    {voice === v.id && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -213,9 +205,7 @@ export function Dashboard() {
                   )}
                 >
                   <f.icon className="mr-2 h-4 w-4" /> {f.label}
-                  {format === f.id && (
-                    <Check className="ml-auto h-3.5 w-3.5 text-primary" />
-                  )}
+                  {format === f.id && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -258,9 +248,7 @@ export function Dashboard() {
                     variant="secondary"
                     className="mt-4 rounded-xl"
                     disabled={pickVariant.isPending}
-                    onClick={() =>
-                      pickVariant.mutate({ prompt: variants.prompt, text: v })
-                    }
+                    onClick={() => pickVariant.mutate({ prompt: variants.prompt, text: v })}
                   >
                     {pickVariant.isPending ? (
                       <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -320,7 +308,6 @@ export function Dashboard() {
             </div>
           </div>
         )}
-
       </section>
     </div>
   );
@@ -336,11 +323,13 @@ type MediaItem = {
 };
 
 function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "cortex";
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "cortex"
+  );
 }
 
 function extFromUrl(url: string, fallback: string) {
@@ -371,8 +360,7 @@ async function downloadItem(item: MediaItem) {
       const blob = new Blob([item.content_text ?? ""], { type: "text/plain" });
       triggerBlobDownload(blob, `${base}.txt`);
     } else if (item.content_url) {
-      const fallback =
-        item.type === "image" ? "png" : item.type === "video" ? "mp4" : "mp3";
+      const fallback = item.type === "image" ? "png" : item.type === "video" ? "mp4" : "mp3";
       const ext = extFromUrl(item.content_url, fallback);
       const res = await fetch(item.content_url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -408,8 +396,7 @@ function MediaCard({
 
   const [open, setOpen] = useState(false);
   const canFullscreen =
-    (item.type === "image" || item.type === "video" || item.type === "audio") &&
-    !!item.content_url;
+    (item.type === "image" || item.type === "video" || item.type === "audio") && !!item.content_url;
 
   return (
     <>
@@ -472,13 +459,9 @@ function MediaCard({
           </div>
         </button>
 
-
-
         <div className="space-y-3 p-4">
           <div className="space-y-1">
-            <p className="line-clamp-1 text-sm font-medium">
-              {item.title ?? "Untitled"}
-            </p>
+            <p className="line-clamp-1 text-sm font-medium">{item.title ?? "Untitled"}</p>
             <p className="text-xs text-muted-foreground">
               {new Date(item.created_at).toLocaleDateString(undefined, {
                 month: "short",
@@ -530,9 +513,7 @@ function MediaCard({
       {canFullscreen && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-[95vw] border-0 bg-background/95 p-2 sm:max-w-5xl">
-            <DialogTitle className="sr-only">
-              {item.title ?? "Media preview"}
-            </DialogTitle>
+            <DialogTitle className="sr-only">{item.title ?? "Media preview"}</DialogTitle>
             {item.type === "image" && item.content_url && (
               <img
                 src={item.content_url}

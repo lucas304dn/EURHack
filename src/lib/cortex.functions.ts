@@ -30,7 +30,7 @@ export const generateText = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              "You are a world-class ad copywriter. Return ONLY a JSON object of the form {\"variants\":[\"...\",\"...\",\"...\"]} with exactly 3 short, punchy ad copy variants (max 280 chars each). No extra text.",
+              'You are a world-class ad copywriter. Return ONLY a JSON object of the form {"variants":["...","...","..."]} with exactly 3 short, punchy ad copy variants (max 280 chars each). No extra text.',
           },
           { role: "user", content: data.prompt },
         ],
@@ -54,7 +54,7 @@ export const generateText = createServerFn({ method: "POST" })
     } catch {
       variants = content
         .split(/\n+/)
-        .map((s) => s.replace(/^[\d\-\.\)\s]+/, "").trim())
+        .map((s) => s.replace(/^[\d.)\s-]+/, "").trim())
         .filter(Boolean)
         .slice(0, 3);
     }
@@ -196,30 +196,39 @@ export const generateImage = createServerFn({ method: "POST" })
     }
 
     const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": key,
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [{ role: "user", parts }],
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+          },
+        }),
+      },
+    );
 
     if (!res.ok) {
       const t = await res.text();
-      if (res.status === 429) throw new Error("Gemini image generation is rate limited. Try again shortly.");
-      if (res.status === 403) throw new Error("Gemini API denied image generation. Check that billing/quota is enabled for this API key.");
+      if (res.status === 429)
+        throw new Error("Gemini image generation is rate limited. Try again shortly.");
+      if (res.status === 403)
+        throw new Error(
+          "Gemini API denied image generation. Check that billing/quota is enabled for this API key.",
+        );
       throw new Error(`Gemini image generation ${res.status}: ${t.slice(0, 200)}`);
     }
 
     const json = (await res.json()) as GeminiGenerateResponse;
     if (json.error) {
-      throw new Error(`Gemini image generation failed: ${json.error.message ?? json.error.status ?? "unknown error"}`);
+      throw new Error(
+        `Gemini image generation failed: ${json.error.message ?? json.error.status ?? "unknown error"}`,
+      );
     }
 
     const image = getGeminiImage(json);
@@ -230,9 +239,7 @@ export const generateImage = createServerFn({ method: "POST" })
     const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
 
     const path = `image/${crypto.randomUUID()}.${ext}`;
-    const up = await supabaseAdmin.storage
-      .from("media")
-      .upload(path, bytes, { contentType });
+    const up = await supabaseAdmin.storage.from("media").upload(path, bytes, { contentType });
     if (up.error) throw new Error(up.error.message);
     const { data: pub } = supabaseAdmin.storage.from("media").getPublicUrl(path);
 
@@ -261,8 +268,6 @@ export const generateVideo = createServerFn({ method: "POST" })
     return { url };
   });
 
-
-
 // ---------- AUDIO (script via OpenRouter, then ElevenLabs TTS) ----------
 async function generateAdScript(prompt: string): Promise<string> {
   const key = process.env.OPENROUTER_API_KEY;
@@ -286,7 +291,8 @@ async function generateAdScript(prompt: string): Promise<string> {
       ],
     }),
   });
-  if (!res.ok) throw new Error(`Script generation ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok)
+    throw new Error(`Script generation ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const script = (json.choices?.[0]?.message?.content ?? "").trim().replace(/^["']|["']$/g, "");
   if (!script) throw new Error("Empty script from model");
@@ -345,7 +351,6 @@ export const generateAudio = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { url: pub.publicUrl, script };
   });
-
 
 // ---------- List / Delete ----------
 export const listMedia = createServerFn({ method: "GET" }).handler(async () => {

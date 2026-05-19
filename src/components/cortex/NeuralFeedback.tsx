@@ -80,7 +80,9 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
       const isVideo = ["mp4", "mov"].includes(ext);
       const isAudio = ["mp3", "wav"].includes(ext);
       if (!isText && !isVideo && !isAudio) {
-        throw new Error("Only video (.mp4 .mov), audio (.mp3 .wav), and text (.txt) files are supported.");
+        throw new Error(
+          "Only video (.mp4 .mov), audio (.mp3 .wav), and text (.txt) files are supported.",
+        );
       }
       if (isText) {
         const text = await file.text();
@@ -192,13 +194,9 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                   <Upload className="h-10 w-10 text-muted-foreground" />
                 )}
                 <p className="mt-4 text-sm">
-                  {upload.isPending
-                    ? "Uploading…"
-                    : "Upload media or drag & drop"}
+                  {upload.isPending ? "Uploading…" : "Upload media or drag & drop"}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  .mp4 .mov .mp3 .wav .txt
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground">.mp4 .mov .mp3 .wav .txt</p>
               </div>
             ) : (
               <div className="mt-6 grid max-h-[420px] grid-cols-2 gap-3 overflow-y-auto pr-1">
@@ -223,9 +221,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                         <TypeIcon className="h-6 w-6 text-muted-foreground" />
                       )}
                     </div>
-                    <p className="line-clamp-1 text-xs font-medium">
-                      {m.title ?? "Untitled"}
-                    </p>
+                    <p className="line-clamp-1 text-xs font-medium">{m.title ?? "Untitled"}</p>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                       {m.type}
                     </p>
@@ -262,11 +258,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                 </div>
               )}
               {selected.type === "video" && selected.content_url && (
-                <video
-                  src={selected.content_url}
-                  controls
-                  className="w-full rounded-2xl"
-                />
+                <video src={selected.content_url} controls className="w-full rounded-2xl" />
               )}
               {selected.type === "audio" && selected.content_url && (
                 <div className="space-y-4">
@@ -284,10 +276,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                     </div>
                     <audio src={selected.content_url} controls className="w-full" />
                   </div>
-                  <TranscriptStream
-                    key={selected.id}
-                    text={selected.content_text ?? ""}
-                  />
+                  <TranscriptStream key={selected.id} text={selected.content_text ?? ""} />
                 </div>
               )}
               {!selectedIsAnalyzable && (
@@ -361,9 +350,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
               exit={{ opacity: 0 }}
               className="mt-6 text-center text-sm text-muted-foreground"
             >
-              {analyzing
-                ? "Scanning neural pathways…"
-                : "Select media to begin neural analysis"}
+              {analyzing ? "Scanning neural pathways…" : "Select media to begin neural analysis"}
             </motion.p>
           ) : (
             <motion.div
@@ -394,9 +381,7 @@ export function NeuralFeedback({ initialMediaId }: { initialMediaId?: string }) 
                       className="h-full rounded-full bg-primary"
                     />
                   </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {r.insight}
-                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{r.insight}</p>
                 </motion.div>
               ))}
 
@@ -444,9 +429,7 @@ function TranscriptStream({ text }: { text: string }) {
 
   return (
     <div className="rounded-2xl border border-border bg-popover/40 p-5">
-      <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-        Transcript
-      </p>
+      <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">Transcript</p>
       <p className="whitespace-pre-wrap text-sm leading-relaxed">
         {shown}
         {shown.length < text.length && (

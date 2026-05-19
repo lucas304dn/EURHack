@@ -14,7 +14,8 @@ export const Route = createFileRoute("/neural-feedback")({
       { title: "Neural Feedback — Cortex" },
       {
         name: "description",
-        content: "Analyze ad creative with neuroscience-grade attention, focus, and virality scoring.",
+        content:
+          "Analyze ad creative with neuroscience-grade attention, focus, and virality scoring.",
       },
     ],
   }),
