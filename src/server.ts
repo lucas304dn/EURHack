@@ -1,7 +1,35 @@
 import "./lib/error-capture";
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
+function parseEnvValue(value: string) {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function loadServerEnv() {
+  try {
+    const envFile = readFileSync(resolve(process.cwd(), ".env"), "utf8");
+    for (const line of envFile.split(/\r?\n/)) {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (!match || match[1].startsWith("VITE_")) continue;
+      process.env[match[1]] ??= parseEnvValue(match[2]);
+    }
+  } catch {
+    // Deployment environments should provide server secrets directly.
+  }
+}
+
+loadServerEnv();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
